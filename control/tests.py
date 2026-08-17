@@ -1,6 +1,12 @@
 from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase
 
+from control.catalogs.fastapi import (
+    CATEGORIES,
+    PARAMETERS,
+    PARAMETERS_BY_KEY,
+    parse_env_value,
+)
 from control.models import (
     ParameterCategory,
     ParameterDefinition,
@@ -108,3 +114,50 @@ class ParameterValidationTests(SimpleTestCase):
         }
         values.update(overrides)
         return ParameterDefinition(**values)
+
+
+class FastAPICatalogTests(SimpleTestCase):
+    def test_parameter_keys_are_unique(self):
+        self.assertEqual(len(PARAMETERS), len(PARAMETERS_BY_KEY))
+
+    def test_all_category_references_exist(self):
+        category_codes = {category.code for category in CATEGORIES}
+
+        self.assertFalse(
+            {parameter.category for parameter in PARAMETERS} - category_codes
+        )
+
+    def test_catalog_defaults_are_valid(self):
+        categories = {
+            category.code: ParameterCategory(code=category.code, name=category.name)
+            for category in CATEGORIES
+        }
+        for spec in PARAMETERS:
+            definition = ParameterDefinition(
+                category=categories[spec.category],
+                service=spec.service,
+                key=spec.key,
+                label=spec.label,
+                description=spec.description,
+                data_type=spec.data_type,
+                default_value=spec.default_value,
+                validation_rules=spec.validation_rules,
+                source=spec.source,
+                is_secret=spec.is_secret,
+                is_required=spec.is_required,
+                requires_restart=spec.requires_restart,
+                sort_order=spec.sort_order,
+            )
+            with self.subTest(key=spec.key):
+                definition.clean()
+
+    def test_placeholder_is_not_imported(self):
+        spec = PARAMETERS_BY_KEY['MAIL_GRAPH_TENANT_ID']
+
+        with self.assertRaises(ValidationError):
+            parse_env_value(spec, '<tenant>')
+
+    def test_boolean_value_is_parsed(self):
+        spec = PARAMETERS_BY_KEY['WHISPER_DIARIZATION_ENABLED']
+
+        self.assertIs(parse_env_value(spec, 'true'), True)
