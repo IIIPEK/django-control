@@ -42,6 +42,7 @@ DEBUG = env_bool('DJANGO_DEBUG')
 
 ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS')
 CSRF_TRUSTED_ORIGINS = env_list('DJANGO_CSRF_TRUSTED_ORIGINS')
+CONFIG_API_KEY = os.environ['DJANGO_CONFIG_API_KEY']
 
 
 # Application definition
