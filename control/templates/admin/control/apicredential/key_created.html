@@ -1,0 +1,20 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+  <div class="module aligned">
+    <h2>{{ credential.name }}</h2>
+    <p><strong>Copy this key now. It will not be shown again.</strong></p>
+    <div class="form-row">
+      <label for="generated-api-key">API key:</label>
+      <input
+        id="generated-api-key"
+        type="text"
+        value="{{ raw_key }}"
+        readonly
+        style="width: 100%; font-family: monospace;"
+        autocomplete="off"
+      >
+    </div>
+    <p><a class="button" href="{{ continue_url }}">Continue to credential</a></p>
+  </div>
+{% endblock %}

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import hashlib
 import re
+import secrets
 from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator
+from django.core.validators import EmailValidator, URLValidator
 from django.db import models, transaction
 from django.db.models import Max, Q
 from django.db.models.functions import Lower
@@ -301,6 +303,265 @@ class ParameterChange(models.Model):
 
     def __str__(self) -> str:
         return f'{self.definition} [{self.environment}] r{self.revision}'
+
+
+API_KEY_HASH_ALGORITHM = 'sha256'
+API_KEY_MIN_LENGTH = 32
+MAIL_AGENT_PERMISSIONS = (
+    ('mail.read', 'Read mail'),
+    ('drafts.create', 'Create drafts'),
+    ('mail.send', 'Send mail'),
+    ('mail.workflow', 'Run mail workflow'),
+)
+MAIL_AGENT_PERMISSION_CODES = frozenset(code for code, _label in MAIL_AGENT_PERMISSIONS)
+
+
+def api_key_digest(raw_key: str) -> str:
+    value = raw_key.strip()
+    if len(value) < API_KEY_MIN_LENGTH:
+        raise ValidationError(
+            f'API keys must contain at least {API_KEY_MIN_LENGTH} characters.'
+        )
+    return hashlib.sha256(value.encode('utf-8')).hexdigest()
+
+
+def generate_api_key() -> str:
+    return f'api_{secrets.token_urlsafe(32)}'
+
+
+class ApiCredential(models.Model):
+    class Role(models.TextChoices):
+        CLIENT = 'client', 'Client'
+        AGENT = 'agent', 'Agent'
+        ADMIN = 'admin', 'Administrator'
+
+    class Scope(models.TextChoices):
+        MAIL_API = 'mail.api', 'Mail API'
+        SQL_QUERY = 'sql.query', 'SQL queries'
+        VOICE_TRANSCRIBE = 'voice.transcribe', 'Voice transcription'
+        DIARIZATION_RUN = 'diarization.run', 'Diarization'
+
+    id = models.BigAutoField(primary_key=True)
+    environment = models.CharField(
+        max_length=16,
+        choices=ParameterValue.Environment.choices,
+        db_index=True,
+    )
+    name = models.CharField(max_length=128)
+    description = models.TextField(blank=True)
+    role = models.CharField(max_length=16, choices=Role.choices, db_index=True)
+    scopes = models.JSONField(default=list)
+    key_id = models.CharField(max_length=12, unique=True, editable=False)
+    key_hash = models.CharField(max_length=64, unique=True, editable=False)
+    hash_algorithm = models.CharField(
+        max_length=16,
+        default=API_KEY_HASH_ALGORITHM,
+        editable=False,
+    )
+    is_active = models.BooleanField(default=True, db_index=True)
+    expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='created_api_credentials',
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='updated_api_credentials',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True, db_index=True)
+
+    class Meta:
+        ordering = ('environment', 'name')
+        constraints = [
+            models.UniqueConstraint(
+                Lower('name'),
+                'environment',
+                name='uq_api_credential_name_env_ci',
+            ),
+            models.CheckConstraint(
+                condition=~Q(key_id=''),
+                name='ck_api_credential_key_id_set',
+            ),
+            models.CheckConstraint(
+                condition=~Q(key_hash=''),
+                name='ck_api_credential_hash_set',
+            ),
+        ]
+
+    def set_key(self, raw_key: str) -> None:
+        digest = api_key_digest(raw_key)
+        self.key_id = digest[:12]
+        self.key_hash = digest
+        self.hash_algorithm = API_KEY_HASH_ALGORITHM
+
+    def matches_key(self, raw_key: str) -> bool:
+        try:
+            digest = api_key_digest(raw_key)
+        except ValidationError:
+            return False
+        return secrets.compare_digest(digest, self.key_hash)
+
+    def clean(self) -> None:
+        super().clean()
+        self.name = self.name.strip()
+        errors: dict[str, str] = {}
+        if not self.name:
+            errors['name'] = 'Credential name cannot be blank.'
+        if not isinstance(self.scopes, list):
+            errors['scopes'] = 'Scopes must be a JSON array.'
+        else:
+            normalized_scopes = list(
+                dict.fromkeys(
+                    scope.strip()
+                    for scope in self.scopes
+                    if isinstance(scope, str) and scope.strip()
+                )
+            )
+            if len(normalized_scopes) != len(self.scopes):
+                errors['scopes'] = 'Scopes must be unique non-empty strings.'
+            unknown_scopes = sorted(
+                set(normalized_scopes) - set(self.Scope.values)
+            )
+            if unknown_scopes:
+                errors['scopes'] = f'Unknown scopes: {", ".join(unknown_scopes)}.'
+            elif not normalized_scopes:
+                errors['scopes'] = 'At least one scope is required.'
+            self.scopes = normalized_scopes
+        if self.hash_algorithm != API_KEY_HASH_ALGORITHM:
+            errors['hash_algorithm'] = 'Unsupported API key hash algorithm.'
+        if not self.key_id:
+            errors['key_id'] = 'API key is not configured.'
+        elif re.fullmatch(r'[0-9a-f]{12}', self.key_id) is None:
+            errors['key_id'] = 'Key ID must be a 12-character SHA-256 prefix.'
+        if not self.key_hash:
+            errors['key_hash'] = 'API key is not configured.'
+        elif re.fullmatch(r'[0-9a-f]{64}', self.key_hash) is None:
+            errors['key_hash'] = 'Key hash must be a hexadecimal SHA-256 digest.'
+        if self.key_hash and self.key_id and not self.key_hash.startswith(self.key_id):
+            errors['key_id'] = 'Key ID must match the stored hash prefix.'
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f'{self.name} [{self.environment}]'
+
+
+class MailAgentPolicy(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    credential = models.OneToOneField(
+        ApiCredential,
+        on_delete=models.CASCADE,
+        related_name='mail_policy',
+    )
+    mailboxes = models.JSONField(default=list)
+    permissions = models.JSONField(default=list)
+    recipient_domains = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ('credential__environment', 'credential__name')
+        verbose_name = 'mail agent policy'
+        verbose_name_plural = 'mail agent policies'
+
+    @staticmethod
+    def _string_list(value: Any, field_name: str, *, lower: bool) -> list[str]:
+        if not isinstance(value, list):
+            raise ValidationError({field_name: 'Value must be a JSON array.'})
+        normalized: list[str] = []
+        for item in value:
+            if not isinstance(item, str) or not item.strip():
+                raise ValidationError(
+                    {field_name: 'Every item must be a non-empty string.'}
+                )
+            item = item.strip()
+            normalized.append(item.lower() if lower else item)
+        return list(dict.fromkeys(normalized))
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        try:
+            self.mailboxes = self._string_list(
+                self.mailboxes,
+                'mailboxes',
+                lower=True,
+            )
+            if not self.mailboxes:
+                errors['mailboxes'] = 'At least one mailbox is required.'
+            else:
+                validator = EmailValidator()
+                for mailbox in self.mailboxes:
+                    validator(mailbox)
+        except ValidationError as exc:
+            errors['mailboxes'] = '; '.join(exc.messages)
+
+        try:
+            self.permissions = self._string_list(
+                self.permissions,
+                'permissions',
+                lower=False,
+            )
+            unknown = sorted(set(self.permissions) - MAIL_AGENT_PERMISSION_CODES)
+            if not self.permissions:
+                errors['permissions'] = 'At least one permission is required.'
+            elif unknown:
+                errors['permissions'] = f'Unknown permissions: {", ".join(unknown)}.'
+        except ValidationError as exc:
+            errors['permissions'] = '; '.join(exc.messages)
+
+        try:
+            domains = self._string_list(
+                self.recipient_domains,
+                'recipient_domains',
+                lower=True,
+            )
+            self.recipient_domains = [domain.removeprefix('@') for domain in domains]
+            invalid_domains = [
+                domain
+                for domain in self.recipient_domains
+                if domain != '*'
+                and re.fullmatch(
+                    r'(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+'
+                    r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?',
+                    domain,
+                )
+                is None
+            ]
+            if invalid_domains:
+                errors['recipient_domains'] = (
+                    f'Invalid recipient domains: {", ".join(invalid_domains)}.'
+                )
+        except ValidationError as exc:
+            errors['recipient_domains'] = '; '.join(exc.messages)
+
+        if self.credential_id:
+            if self.credential.role != ApiCredential.Role.AGENT:
+                errors['credential'] = (
+                    'Mail policies can only be assigned to agent credentials.'
+                )
+            elif ApiCredential.Scope.MAIL_API not in self.credential.scopes:
+                errors['credential'] = 'Mail policies require the mail.api scope.'
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f'Mail policy: {self.credential}'
 
 
 def validate_parameter_value(value: Any, data_type: str, rules: dict[str, Any]) -> None:

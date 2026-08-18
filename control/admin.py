@@ -1,6 +1,11 @@
 from django.contrib import admin
+from django.template.response import TemplateResponse
+from django.urls import reverse
 
+from control.forms import ApiCredentialAdminForm, MailAgentPolicyAdminForm
 from control.models import (
+    ApiCredential,
+    MailAgentPolicy,
     ParameterCategory,
     ParameterChange,
     ParameterDefinition,
@@ -100,3 +105,120 @@ class ParameterChangeAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+class MailAgentPolicyInline(admin.StackedInline):
+    model = MailAgentPolicy
+    form = MailAgentPolicyAdminForm
+    extra = 1
+    max_num = 1
+    verbose_name = 'Mail agent policy'
+    verbose_name_plural = 'Mail agent policy (agent credentials only)'
+
+
+@admin.register(ApiCredential)
+class ApiCredentialAdmin(admin.ModelAdmin):
+    form = ApiCredentialAdminForm
+    inlines = (MailAgentPolicyInline,)
+    list_display = (
+        'name',
+        'environment',
+        'role',
+        'scope_list',
+        'key_id',
+        'is_active',
+        'expires_at',
+        'updated_at',
+    )
+    list_filter = ('environment', 'role', 'is_active')
+    search_fields = ('name', 'key_id', 'description')
+    ordering = ('environment', 'name')
+    readonly_fields = (
+        'key_id',
+        'hash_algorithm',
+        'created_by',
+        'updated_by',
+        'created_at',
+        'updated_at',
+    )
+    fieldsets = (
+        (
+            None,
+            {
+                'fields': (
+                    'environment',
+                    'name',
+                    'description',
+                    'role',
+                    'scopes',
+                    'is_active',
+                    'expires_at',
+                )
+            },
+        ),
+        (
+            'API key',
+            {
+                'fields': (
+                    'raw_key',
+                    'generate_key',
+                    'key_id',
+                    'hash_algorithm',
+                ),
+                'description': (
+                    'The plaintext key is never stored. Entering a new key on '
+                    'an existing credential rotates it.'
+                ),
+            },
+        ),
+        (
+            'Audit',
+            {
+                'fields': (
+                    'created_by',
+                    'updated_by',
+                    'created_at',
+                    'updated_at',
+                ),
+                'classes': ('collapse',),
+            },
+        ),
+    )
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+    @admin.display(description='Scopes')
+    def scope_list(self, obj):
+        return ', '.join(obj.scopes)
+
+    def response_add(self, request, obj, post_url_continue=None):
+        if getattr(obj, '_generated_raw_key', None):
+            return self._generated_key_response(request, obj)
+        return super().response_add(request, obj, post_url_continue)
+
+    def response_change(self, request, obj):
+        if getattr(obj, '_generated_raw_key', None):
+            return self._generated_key_response(request, obj)
+        return super().response_change(request, obj)
+
+    def _generated_key_response(self, request, obj):
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'API key generated',
+            'opts': self.model._meta,
+            'credential': obj,
+            'raw_key': obj._generated_raw_key,
+            'continue_url': reverse(
+                'admin:control_apicredential_change',
+                args=(obj.pk,),
+            ),
+        }
+        return TemplateResponse(
+            request,
+            'admin/control/apicredential/key_created.html',
+            context,
+        )

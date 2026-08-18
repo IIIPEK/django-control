@@ -89,9 +89,9 @@ PARAMETERS = (
     _spec('LOG_FORMAT', 'logging', 'fastapi', 'Log format', 'Формат журналов: текст или JSON.', default='text', rules={'choices': ['text', 'json']}, order=20),
 
     _spec('LLAMA_URL', 'llm', 'fastapi', 'VLM chat endpoint', 'OpenAI-compatible endpoint основной VLM.', data_type='url', default='http://127.0.0.1:8080/v1/chat/completions', required=True, order=10),
-    _spec('VLM_MODEL', 'llm', 'fastapi', 'VLM model', 'Явное имя VLM; при отсутствии определяется через /v1/models.', order=20),
+    _spec('VLM_MODEL', 'llm', 'fastapi', 'VLM model', 'Имя VLM; значения auto и auto-detect определяют модель через /v1/models.', order=20),
     _spec('CLASSIFICATION_LLM_URL', 'llm', 'fastapi', 'Classification LLM endpoint', 'OpenAI-compatible endpoint модели классификации.', data_type='url', order=30),
-    _spec('CLASSIFICATION_LLM_MODEL', 'llm', 'fastapi', 'Classification model', 'Имя модели для классификации документов.', order=40),
+    _spec('CLASSIFICATION_LLM_MODEL', 'llm', 'fastapi', 'Classification model', 'Имя текстовой модели; значения auto и auto-detect определяют модель через /v1/models.', order=40),
     _spec('CLASSIFICATION_LLM_TIMEOUT_SECONDS', 'llm', 'fastapi', 'Classification timeout', 'Таймаут запроса классификации в секундах.', data_type='float', default=120, rules={'min': 1, 'max': 3600}, order=50),
 
     _spec('OCR_PROMPT', 'ocr', 'fastapi', 'OCR prompt', 'Инструкция модели для дословного извлечения текста из изображения.', default='Extract all visible text from the image. Do not translate. Do not summarize. Do not explain. Preserve original language, line breaks, numbers, punctuation, tables and currency symbols. Return only the extracted text.', rules={'min_length': 10}, order=10),

@@ -138,3 +138,45 @@ class ConfigAPIRequestValidationTests(SimpleTestCase):
         )
 
         self.assertEqual(response.status_code, 405)
+
+    def test_mail_credentials_require_authentication(self):
+        response = self.client.get('/api/v1/credentials/mail/production/')
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_mail_credentials_reject_unknown_environment(self):
+        response = self.client.get(
+            '/api/v1/credentials/mail/invalid/',
+            headers={'Authorization': 'Bearer test-service-token'},
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_mail_credentials_are_read_only(self):
+        response = self.client.post(
+            '/api/v1/credentials/mail/production/',
+            headers={'Authorization': 'Bearer test-service-token'},
+        )
+
+        self.assertEqual(response.status_code, 405)
+
+    def test_credentials_require_authentication(self):
+        response = self.client.get('/api/v1/credentials/production/')
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_credentials_reject_unknown_environment(self):
+        response = self.client.get(
+            '/api/v1/credentials/invalid/',
+            headers={'Authorization': 'Bearer test-service-token'},
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_credentials_are_read_only(self):
+        response = self.client.post(
+            '/api/v1/credentials/production/',
+            headers={'Authorization': 'Bearer test-service-token'},
+        )
+
+        self.assertEqual(response.status_code, 405)
