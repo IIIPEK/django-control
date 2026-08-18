@@ -180,3 +180,24 @@ class ConfigAPIRequestValidationTests(SimpleTestCase):
         )
 
         self.assertEqual(response.status_code, 405)
+
+    def test_sql_catalog_requires_authentication(self):
+        response = self.client.get('/api/v1/sql-catalog/production/')
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_sql_catalog_rejects_unknown_environment(self):
+        response = self.client.get(
+            '/api/v1/sql-catalog/invalid/',
+            headers={'Authorization': 'Bearer test-service-token'},
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_sql_catalog_is_read_only(self):
+        response = self.client.post(
+            '/api/v1/sql-catalog/production/',
+            headers={'Authorization': 'Bearer test-service-token'},
+        )
+
+        self.assertEqual(response.status_code, 405)

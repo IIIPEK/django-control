@@ -18,7 +18,9 @@ def build_credentials(credentials: Iterable[ApiCredential]) -> dict:
                 'hash_algorithm': credential.hash_algorithm,
                 'name': credential.name,
                 'role': credential.role,
-                'scopes': list(credential.scopes),
+                'roles': _access_role_codes(credential),
+                'scopes': _effective_scope_codes(credential),
+                'sql_profiles': _sql_profile_codes(credential),
                 'mailboxes': list(policy.mailboxes) if policy else [],
                 'permissions': list(policy.permissions) if policy else [],
                 'recipient_domains': (
@@ -47,3 +49,24 @@ def build_credentials(credentials: Iterable[ApiCredential]) -> dict:
 
 
 build_mail_credentials = build_credentials
+
+
+def _effective_scope_codes(credential: ApiCredential) -> list[str]:
+    method = getattr(credential, 'effective_scope_codes', None)
+    if callable(method):
+        return method()
+    return sorted(set(getattr(credential, 'scopes', [])))
+
+
+def _access_role_codes(credential: ApiCredential) -> list[str]:
+    method = getattr(credential, 'access_role_codes', None)
+    if callable(method):
+        return method()
+    return list(getattr(credential, 'roles', []))
+
+
+def _sql_profile_codes(credential: ApiCredential) -> list[str]:
+    method = getattr(credential, 'sql_profile_codes', None)
+    if callable(method):
+        return method()
+    return list(getattr(credential, 'sql_profiles', []))

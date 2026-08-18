@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import secrets
 from typing import Any
@@ -329,17 +330,110 @@ def generate_api_key() -> str:
     return f'api_{secrets.token_urlsafe(32)}'
 
 
+class ApiScope(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    code = models.CharField(max_length=128)
+    name = models.CharField(max_length=128)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ('code',)
+        constraints = [
+            models.UniqueConstraint(Lower('code'), name='uq_api_scope_code_ci'),
+            models.CheckConstraint(condition=~Q(code=''), name='ck_api_scope_code_set'),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        self.code = self.code.strip().lower()
+        self.name = self.name.strip()
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return self.code
+
+
+class AccessRole(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    code = models.SlugField(max_length=64)
+    name = models.CharField(max_length=128)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    scopes = models.ManyToManyField(
+        ApiScope,
+        through='AccessRoleScope',
+        related_name='access_roles',
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ('code',)
+        constraints = [
+            models.UniqueConstraint(Lower('code'), name='uq_access_role_code_ci'),
+            models.CheckConstraint(condition=~Q(code=''), name='ck_access_role_code_set'),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        self.code = self.code.strip().lower()
+        self.name = self.name.strip()
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class AccessRoleScope(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    role = models.ForeignKey(
+        AccessRole,
+        on_delete=models.CASCADE,
+        related_name='scope_links',
+    )
+    scope = models.ForeignKey(
+        ApiScope,
+        on_delete=models.PROTECT,
+        related_name='role_links',
+    )
+
+    class Meta:
+        ordering = ('role__code', 'scope__code')
+        constraints = [
+            models.UniqueConstraint(
+                fields=('role', 'scope'),
+                name='uq_access_role_scope',
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f'{self.role.code}: {self.scope.code}'
+
+
 class ApiCredential(models.Model):
     class Role(models.TextChoices):
         CLIENT = 'client', 'Client'
         AGENT = 'agent', 'Agent'
         ADMIN = 'admin', 'Administrator'
 
-    class Scope(models.TextChoices):
-        MAIL_API = 'mail.api', 'Mail API'
-        SQL_QUERY = 'sql.query', 'SQL queries'
-        VOICE_TRANSCRIBE = 'voice.transcribe', 'Voice transcription'
-        DIARIZATION_RUN = 'diarization.run', 'Diarization'
+    class Scope:
+        MAIL_API = 'mail.api'
+        SQL_QUERY = 'sql.query'
+        SQL_CATALOG_READ = 'sql.catalog.read'
+        SQL_QUERY_EXECUTE = 'sql.query.execute'
+        SQL_QUERY_UPLOAD = 'sql.query.upload'
+        VOICE_TRANSCRIBE = 'voice.transcribe'
+        DIARIZATION_RUN = 'diarization.run'
 
     id = models.BigAutoField(primary_key=True)
     environment = models.CharField(
@@ -350,7 +444,18 @@ class ApiCredential(models.Model):
     name = models.CharField(max_length=128)
     description = models.TextField(blank=True)
     role = models.CharField(max_length=16, choices=Role.choices, db_index=True)
-    scopes = models.JSONField(default=list)
+    access_roles = models.ManyToManyField(
+        AccessRole,
+        through='ApiCredentialRole',
+        related_name='credentials',
+        blank=True,
+    )
+    sql_profiles = models.ManyToManyField(
+        'SqlAccessProfile',
+        through='SqlCredentialProfile',
+        related_name='credentials',
+        blank=True,
+    )
     key_id = models.CharField(max_length=12, unique=True, editable=False)
     key_hash = models.CharField(max_length=64, unique=True, editable=False)
     hash_algorithm = models.CharField(
@@ -408,32 +513,36 @@ class ApiCredential(models.Model):
             return False
         return secrets.compare_digest(digest, self.key_hash)
 
+    def effective_scope_codes(self) -> list[str]:
+        codes = {
+            scope.code
+            for role in self.access_roles.all()
+            if role.is_active
+            for scope in role.scopes.all()
+            if scope.is_active
+        }
+        return sorted(codes)
+
+    @property
+    def scopes(self) -> list[str]:
+        return self.effective_scope_codes()
+
+    def access_role_codes(self) -> list[str]:
+        return sorted(
+            role.code for role in self.access_roles.all() if role.is_active
+        )
+
+    def sql_profile_codes(self) -> list[str]:
+        return sorted(
+            profile.code for profile in self.sql_profiles.all() if profile.is_active
+        )
+
     def clean(self) -> None:
         super().clean()
         self.name = self.name.strip()
         errors: dict[str, str] = {}
         if not self.name:
             errors['name'] = 'Credential name cannot be blank.'
-        if not isinstance(self.scopes, list):
-            errors['scopes'] = 'Scopes must be a JSON array.'
-        else:
-            normalized_scopes = list(
-                dict.fromkeys(
-                    scope.strip()
-                    for scope in self.scopes
-                    if isinstance(scope, str) and scope.strip()
-                )
-            )
-            if len(normalized_scopes) != len(self.scopes):
-                errors['scopes'] = 'Scopes must be unique non-empty strings.'
-            unknown_scopes = sorted(
-                set(normalized_scopes) - set(self.Scope.values)
-            )
-            if unknown_scopes:
-                errors['scopes'] = f'Unknown scopes: {", ".join(unknown_scopes)}.'
-            elif not normalized_scopes:
-                errors['scopes'] = 'At least one scope is required.'
-            self.scopes = normalized_scopes
         if self.hash_algorithm != API_KEY_HASH_ALGORITHM:
             errors['hash_algorithm'] = 'Unsupported API key hash algorithm.'
         if not self.key_id:
@@ -455,6 +564,489 @@ class ApiCredential(models.Model):
 
     def __str__(self) -> str:
         return f'{self.name} [{self.environment}]'
+
+
+class ApiCredentialRole(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    credential = models.ForeignKey(
+        ApiCredential,
+        on_delete=models.CASCADE,
+        related_name='role_links',
+    )
+    role = models.ForeignKey(
+        AccessRole,
+        on_delete=models.PROTECT,
+        related_name='credential_links',
+    )
+
+    class Meta:
+        ordering = ('credential__environment', 'credential__name', 'role__code')
+        constraints = [
+            models.UniqueConstraint(
+                fields=('credential', 'role'),
+                name='uq_api_credential_role',
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f'{self.credential}: {self.role.code}'
+
+
+class SqlQueryCategory(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    code = models.SlugField(max_length=64)
+    name = models.CharField(max_length=128)
+    description = models.TextField(blank=True)
+    sort_order = models.PositiveIntegerField(default=0, db_index=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        ordering = ('sort_order', 'name')
+        verbose_name = 'SQL query category'
+        verbose_name_plural = 'SQL query categories'
+        constraints = [
+            models.UniqueConstraint(
+                Lower('code'),
+                name='uq_sql_query_category_code_ci',
+            ),
+            models.CheckConstraint(
+                condition=~Q(code=''),
+                name='ck_sql_query_category_code_set',
+            ),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        self.code = self.code.strip().lower()
+        self.name = self.name.strip()
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class SqlAccessProfile(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    environment = models.CharField(
+        max_length=16,
+        choices=ParameterValue.Environment.choices,
+        db_index=True,
+    )
+    code = models.SlugField(max_length=64)
+    name = models.CharField(max_length=128)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ('environment', 'code')
+        constraints = [
+            models.UniqueConstraint(
+                Lower('code'),
+                'environment',
+                name='uq_sql_access_profile_code_env_ci',
+            ),
+            models.CheckConstraint(
+                condition=~Q(code=''),
+                name='ck_sql_access_profile_code_set',
+            ),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        self.code = self.code.strip().lower()
+        self.name = self.name.strip()
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f'{self.name} [{self.environment}]'
+
+
+class SqlQuery(models.Model):
+    class Kind(models.TextChoices):
+        SINGLE = 'single', 'Single query'
+        MULTI_STEP = 'multi_step', 'Multi-step query'
+
+    class Status(models.TextChoices):
+        ACTIVE = 'active', 'Active'
+        DEPRECATED = 'deprecated', 'Deprecated'
+
+    id = models.BigAutoField(primary_key=True)
+    key = models.CharField(max_length=16)
+    category = models.ForeignKey(
+        SqlQueryCategory,
+        on_delete=models.PROTECT,
+        related_name='queries',
+    )
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    kind = models.CharField(
+        max_length=16,
+        choices=Kind.choices,
+        default=Kind.SINGLE,
+    )
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.ACTIVE,
+        db_index=True,
+    )
+    deprecated_by = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='deprecated_queries',
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='created_sql_queries',
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='updated_sql_queries',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True, db_index=True)
+
+    class Meta:
+        ordering = ('key',)
+        constraints = [
+            models.UniqueConstraint(Lower('key'), name='uq_sql_query_key_ci'),
+            models.CheckConstraint(condition=~Q(key=''), name='ck_sql_query_key_set'),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        self.key = self.key.strip().upper()
+        self.title = self.title.strip()
+        errors: dict[str, str] = {}
+        if re.fullmatch(r'Q-\d{2}(?:-\d{2})?', self.key) is None:
+            errors['key'] = 'SQL query keys must use Q-00 or Q-00-00 format.'
+        if not self.title:
+            errors['title'] = 'Title cannot be blank.'
+        if not self.description.strip():
+            errors['description'] = 'Description cannot be blank.'
+        if self.status == self.Status.DEPRECATED and self.deprecated_by_id is None:
+            errors['deprecated_by'] = 'Deprecated queries require a replacement.'
+        if self.deprecated_by_id == self.pk and self.pk is not None:
+            errors['deprecated_by'] = 'A query cannot replace itself.'
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f'{self.key}: {self.title}'
+
+
+class SqlQueryRevision(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    query = models.ForeignKey(
+        SqlQuery,
+        on_delete=models.PROTECT,
+        related_name='revisions',
+    )
+    revision = models.PositiveBigIntegerField(default=0, editable=False)
+    sql_text = models.TextField()
+    parameters = models.JSONField(default=dict, blank=True)
+    result_description = models.TextField(blank=True)
+    checksum = models.CharField(max_length=64, editable=False)
+    comment = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='created_sql_query_revisions',
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ('query__key', '-revision')
+        constraints = [
+            models.UniqueConstraint(
+                fields=('query', 'revision'),
+                name='uq_sql_query_revision',
+            ),
+            models.UniqueConstraint(
+                fields=('query', 'checksum'),
+                name='uq_sql_query_revision_checksum',
+            ),
+        ]
+
+    def _checksum(self) -> str:
+        canonical = json.dumps(
+            {
+                'sql_text': self.sql_text.replace('\r\n', '\n').strip(),
+                'parameters': self.parameters,
+                'result_description': self.result_description.strip(),
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(',', ':'),
+        ).encode('utf-8')
+        return hashlib.sha256(canonical).hexdigest()
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        self.sql_text = self.sql_text.replace('\r\n', '\n').strip()
+        if self.query_id and self.query.kind != SqlQuery.Kind.SINGLE:
+            errors['query'] = 'Only single queries can have SQL revisions.'
+        if not self.sql_text:
+            errors['sql_text'] = 'SQL text cannot be blank.'
+        if not isinstance(self.parameters, dict):
+            errors['parameters'] = 'Parameters must be a JSON object.'
+        if '\x00' in self.sql_text:
+            errors['sql_text'] = 'SQL text cannot contain null bytes.'
+        self.checksum = self._checksum()
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if not self._state.adding:
+            raise ValidationError('SQL query revisions are immutable.')
+        using = kwargs.get('using') or self._state.db or 'default'
+        with transaction.atomic(using=using):
+            SqlQuery.objects.using(using).select_for_update().get(pk=self.query_id)
+            if not self.revision:
+                last_revision = (
+                    type(self).objects.using(using)
+                    .filter(query_id=self.query_id)
+                    .aggregate(value=Max('revision'))['value']
+                    or 0
+                )
+                self.revision = last_revision + 1
+            self.full_clean()
+            super().save(*args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> None:
+        raise ValidationError('SQL query revisions cannot be deleted.')
+
+    def __str__(self) -> str:
+        return f'{self.query.key} r{self.revision}'
+
+
+class SqlQueryPublication(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    query = models.ForeignKey(
+        SqlQuery,
+        on_delete=models.PROTECT,
+        related_name='publications',
+    )
+    environment = models.CharField(
+        max_length=16,
+        choices=ParameterValue.Environment.choices,
+        db_index=True,
+    )
+    revision = models.ForeignKey(
+        SqlQueryRevision,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='publications',
+    )
+    is_enabled = models.BooleanField(default=True, db_index=True)
+    default_limit = models.PositiveIntegerField(null=True, blank=True)
+    max_limit = models.PositiveIntegerField(default=100000)
+    timeout_seconds = models.PositiveIntegerField(default=120)
+    published_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='sql_query_publications',
+    )
+    published_at = models.DateTimeField(auto_now=True, db_index=True)
+
+    class Meta:
+        ordering = ('environment', 'query__key')
+        permissions = [('publish_sqlquery', 'Can publish SQL queries')]
+        constraints = [
+            models.UniqueConstraint(
+                fields=('query', 'environment'),
+                name='uq_sql_query_publication_env',
+            ),
+            models.CheckConstraint(
+                condition=Q(default_limit__isnull=True) | Q(default_limit__gt=0),
+                name='ck_sql_publication_default_limit',
+            ),
+            models.CheckConstraint(
+                condition=Q(max_limit__gt=0),
+                name='ck_sql_publication_max_limit',
+            ),
+            models.CheckConstraint(
+                condition=Q(timeout_seconds__gt=0),
+                name='ck_sql_publication_timeout',
+            ),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        if self.query_id:
+            if self.query.kind == SqlQuery.Kind.SINGLE and self.revision_id is None:
+                errors['revision'] = 'Single queries require a published revision.'
+            if self.query.kind == SqlQuery.Kind.MULTI_STEP and self.revision_id is not None:
+                errors['revision'] = 'Multi-step queries cannot publish a SQL revision.'
+        if self.revision_id and self.revision.query_id != self.query_id:
+            errors['revision'] = 'Published revision must belong to the selected query.'
+        if self.default_limit is not None and self.default_limit > self.max_limit:
+            errors['default_limit'] = 'Default limit cannot exceed maximum limit.'
+        if self.default_limit is not None and self.default_limit < 1:
+            errors['default_limit'] = 'Default limit must be greater than zero.'
+        if self.max_limit < 1:
+            errors['max_limit'] = 'Maximum limit must be greater than zero.'
+        if self.timeout_seconds < 1:
+            errors['timeout_seconds'] = 'Timeout must be greater than zero.'
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f'{self.query.key} [{self.environment}]'
+
+
+class SqlQueryStep(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    parent = models.ForeignKey(
+        SqlQuery,
+        on_delete=models.CASCADE,
+        related_name='step_links',
+    )
+    child = models.ForeignKey(
+        SqlQuery,
+        on_delete=models.PROTECT,
+        related_name='parent_links',
+    )
+    position = models.PositiveIntegerField()
+
+    class Meta:
+        ordering = ('parent__key', 'position')
+        constraints = [
+            models.UniqueConstraint(
+                fields=('parent', 'position'),
+                name='uq_sql_query_step_position',
+            ),
+            models.UniqueConstraint(
+                fields=('parent', 'child'),
+                name='uq_sql_query_step_child',
+            ),
+            models.CheckConstraint(
+                condition=~Q(parent=models.F('child')),
+                name='ck_sql_query_step_not_self',
+            ),
+            models.CheckConstraint(
+                condition=Q(position__gt=0),
+                name='ck_sql_query_step_position',
+            ),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        if self.parent_id and self.parent.kind != SqlQuery.Kind.MULTI_STEP:
+            errors['parent'] = 'Only multi-step queries can contain steps.'
+        if self.child_id and self.child.kind != SqlQuery.Kind.SINGLE:
+            errors['child'] = 'A query step must reference a single query.'
+        if self.parent_id == self.child_id and self.parent_id is not None:
+            errors['child'] = 'A query cannot contain itself.'
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f'{self.parent.key} #{self.position}: {self.child.key}'
+
+
+class SqlQueryGrant(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    profile = models.ForeignKey(
+        SqlAccessProfile,
+        on_delete=models.CASCADE,
+        related_name='query_grants',
+    )
+    query = models.ForeignKey(
+        SqlQuery,
+        on_delete=models.CASCADE,
+        related_name='profile_grants',
+    )
+    can_execute = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ('profile__environment', 'profile__code', 'query__key')
+        constraints = [
+            models.UniqueConstraint(
+                fields=('profile', 'query'),
+                name='uq_sql_query_profile_grant',
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f'{self.profile}: {self.query.key}'
+
+
+class SqlCredentialProfile(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    credential = models.ForeignKey(
+        ApiCredential,
+        on_delete=models.CASCADE,
+        related_name='sql_profile_links',
+    )
+    profile = models.ForeignKey(
+        SqlAccessProfile,
+        on_delete=models.PROTECT,
+        related_name='credential_links',
+    )
+
+    class Meta:
+        ordering = ('credential__environment', 'credential__name', 'profile__code')
+        constraints = [
+            models.UniqueConstraint(
+                fields=('credential', 'profile'),
+                name='uq_sql_credential_profile',
+            ),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        if (
+            self.credential_id
+            and self.profile_id
+            and self.credential.environment != self.profile.environment
+        ):
+            raise ValidationError(
+                {'profile': 'Credential and SQL profile environments must match.'}
+            )
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f'{self.credential}: {self.profile.code}'
 
 
 class MailAgentPolicy(models.Model):

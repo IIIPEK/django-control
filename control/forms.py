@@ -6,17 +6,27 @@ from django.core.exceptions import ValidationError
 from control.models import (
     API_KEY_MIN_LENGTH,
     MAIL_AGENT_PERMISSIONS,
+    AccessRole,
     ApiCredential,
     MailAgentPolicy,
+    SqlAccessProfile,
     generate_api_key,
 )
 
 
 class ApiCredentialAdminForm(forms.ModelForm):
-    scopes = forms.MultipleChoiceField(
-        choices=ApiCredential.Scope.choices,
+    selected_access_roles = forms.ModelMultipleChoiceField(
+        label='Access roles',
+        queryset=AccessRole.objects.none(),
         widget=forms.CheckboxSelectMultiple,
-        help_text='Select every FastAPI capability allowed for this key.',
+        help_text='Effective API scopes are inherited from the selected roles.',
+    )
+    selected_sql_profiles = forms.ModelMultipleChoiceField(
+        label='SQL access profiles',
+        queryset=SqlAccessProfile.objects.none(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text='Only profiles from the credential environment can be assigned.',
     )
     raw_key = forms.CharField(
         label='API key',
@@ -43,7 +53,8 @@ class ApiCredentialAdminForm(forms.ModelForm):
             'name',
             'description',
             'role',
-            'scopes',
+            'selected_access_roles',
+            'selected_sql_profiles',
             'is_active',
             'expires_at',
         )
@@ -53,16 +64,35 @@ class ApiCredentialAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['selected_access_roles'].queryset = AccessRole.objects.filter(
+            is_active=True
+        ).order_by('code')
+        self.fields['selected_sql_profiles'].queryset = SqlAccessProfile.objects.filter(
+            is_active=True
+        ).order_by('environment', 'code')
         if self.instance.pk:
-            self.initial['scopes'] = self.instance.scopes
-
-    def clean_scopes(self) -> list[str]:
-        return list(self.cleaned_data['scopes'])
+            self.initial['selected_access_roles'] = self.instance.access_roles.all()
+            self.initial['selected_sql_profiles'] = self.instance.sql_profiles.all()
 
     def clean(self):
         cleaned_data = super().clean()
         raw_key = cleaned_data.get('raw_key')
         generate_key_requested = cleaned_data.get('generate_key', False)
+        environment = cleaned_data.get('environment')
+        sql_profiles = cleaned_data.get('selected_sql_profiles')
+
+        if environment and sql_profiles:
+            mismatched = [
+                profile.code
+                for profile in sql_profiles
+                if profile.environment != environment
+            ]
+            if mismatched:
+                self.add_error(
+                    'selected_sql_profiles',
+                    'Profiles belong to another environment: '
+                    + ', '.join(sorted(mismatched)),
+                )
 
         if raw_key and generate_key_requested:
             raise ValidationError('Enter an API key or generate one, not both.')
@@ -74,6 +104,13 @@ class ApiCredentialAdminForm(forms.ModelForm):
         if raw_key:
             self.instance.set_key(raw_key)
         return cleaned_data
+
+    def _save_m2m(self):
+        super()._save_m2m()
+        self.instance.access_roles.set(self.cleaned_data['selected_access_roles'])
+        self.instance.sql_profiles.set(
+            self.cleaned_data.get('selected_sql_profiles', [])
+        )
 
     def save(self, commit=True):
         instance = super().save(commit=False)

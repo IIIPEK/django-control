@@ -10,7 +10,14 @@ from django.views.decorators.http import require_http_methods
 from control.api.auth import require_config_api_key
 from control.api.credential_services import build_credentials
 from control.api.services import build_effective_config
-from control.models import ApiCredential, ParameterDefinition, ParameterValue
+from control.api.sql_catalog_services import build_sql_catalog
+from control.models import (
+    ApiCredential,
+    ParameterDefinition,
+    ParameterValue,
+    SqlQuery,
+    SqlQueryPublication,
+)
 
 
 SERVICE_RE = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
@@ -115,6 +122,44 @@ def mail_credentials(request, environment: str):
     )
 
 
+@require_config_api_key
+@require_http_methods(['GET', 'HEAD'])
+def sql_catalog(request, environment: str):
+    if environment not in ENVIRONMENTS:
+        return JsonResponse({'detail': 'Unknown environment.'}, status=404)
+
+    publications = list(
+        SqlQueryPublication.objects.filter(
+            environment=environment,
+            is_enabled=True,
+            query__status=SqlQuery.Status.ACTIVE,
+            query__category__is_active=True,
+        )
+        .select_related(
+            'query__category',
+            'query__deprecated_by',
+            'revision',
+        )
+        .prefetch_related(
+            'query__profile_grants__profile',
+            'query__step_links__child',
+        )
+        .order_by('query__key')
+    )
+    payload = build_sql_catalog(publications, environment=environment)
+    etag = f'"{payload["version"]}"'
+    if request.headers.get('If-None-Match') == etag:
+        response = HttpResponseNotModified()
+    else:
+        response = JsonResponse(payload, json_dumps_params={'ensure_ascii': False})
+
+    response['ETag'] = etag
+    response['Cache-Control'] = 'private, no-cache'
+    response['Vary'] = 'Authorization'
+    response['X-Content-Type-Options'] = 'nosniff'
+    return response
+
+
 def _credentials_response(
     request,
     environment: str,
@@ -131,6 +176,7 @@ def _credentials_response(
         )
         .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now()))
         .select_related('mail_policy')
+        .prefetch_related('access_roles__scopes', 'sql_profiles')
         .order_by('key_id')
     )
     if required_scope is not None:

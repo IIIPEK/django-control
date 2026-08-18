@@ -83,3 +83,69 @@ Authorization: Bearer <DJANGO_CONFIG_API_KEY>
 The endpoint is read-only and supports `ETag`/`If-None-Match`. The returned
 hashes are used for local verification of incoming bearer keys; plaintext API
 keys are never returned.
+
+## Access roles and SQL profiles
+
+API scopes are normalized database records and are assigned through reusable
+access roles. The credentials endpoint remains schema version 2 for FastAPI
+compatibility and now also returns role codes and SQL profile codes. Standard
+roles created by the migration include `mail-agent`, `sql-consumer`,
+`sql-maintainer`, `voice-client`, and `diarization-client`.
+
+The legacy `sql.query` scope remains on SQL roles during the FastAPI migration.
+The granular SQL scopes are:
+
+```text
+sql.catalog.read
+sql.query.execute
+sql.query.upload
+```
+
+SQL access is deny-by-default. A credential must have an execution scope and a
+SQL access profile; that profile must have an explicit grant for the requested
+query.
+
+## Versioned SQL catalog
+
+SQL queries have stable `Q-00` or `Q-00-00` keys, categories, descriptions,
+immutable revisions, environment-specific publications, access-profile grants,
+and ordered multi-step relationships. Editing a query revision does not change
+production until that revision is explicitly published.
+
+FastAPI can retrieve enabled publications from:
+
+```text
+GET /api/v1/sql-catalog/production/
+Authorization: Bearer <DJANGO_CONFIG_API_KEY>
+```
+
+The response is read-only and supports `ETag`/`If-None-Match`. SQL text is sent
+only to the trusted FastAPI control-plane client, not to ordinary SQL API
+callers.
+
+Preview importing the existing FastAPI registry and SQL files:
+
+```powershell
+python manage.py sync_sql_catalog `
+  --registry-file C:\iv\Python\FastAPI_AI_backend\sql\registry.json `
+  --environment production `
+  --dry-run
+```
+
+Apply the import after reviewing the preview:
+
+```powershell
+python manage.py sync_sql_catalog `
+  --registry-file C:\iv\Python\FastAPI_AI_backend\sql\registry.json `
+  --environment production
+```
+
+The command is idempotent. Changed SQL creates a new immutable revision;
+unchanged SQL reuses its existing checksum. Section profiles and grants are
+created without assigning those profiles to credentials.
+
+Run tests without requiring PostgreSQL `CREATEDB` permission:
+
+```powershell
+python manage.py test control --settings=config.test_settings
+```
