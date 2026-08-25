@@ -310,6 +310,7 @@ API_KEY_HASH_ALGORITHM = 'sha256'
 API_KEY_MIN_LENGTH = 32
 MAIL_AGENT_PERMISSIONS = (
     ('mail.read', 'Read mail'),
+    ('mail.mark_read', 'Mark mail as read'),
     ('drafts.create', 'Create drafts'),
     ('mail.send', 'Send mail'),
     ('mail.workflow', 'Run mail workflow'),

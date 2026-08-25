@@ -63,6 +63,22 @@ class MailAgentPolicyValidationTests(SimpleTestCase):
         self.assertEqual(policy.permissions, ['mail.read'])
         self.assertEqual(policy.recipient_domains, ['example.com', '*'])
 
+    def test_mark_read_permission_is_allowed(self):
+        credential = ApiCredential(
+            environment='production',
+            name='Mail status agent',
+            role=ApiCredential.Role.AGENT,
+        )
+        policy = MailAgentPolicy(
+            credential=credential,
+            mailboxes=['bot@example.com'],
+            permissions=['mail.mark_read'],
+        )
+
+        policy.clean()
+
+        self.assertEqual(policy.permissions, ['mail.mark_read'])
+
     def test_unknown_permission_is_rejected(self):
         credential = ApiCredential(
             environment='production',
@@ -107,6 +123,30 @@ class MailCredentialPayloadTests(SimpleTestCase):
             ['mail.read'],
         )
         self.assertEqual(len(payload['version']), 64)
+
+    def test_payload_contains_mark_read_permission(self):
+        policy = SimpleNamespace(
+            mailboxes=['bot@example.com'],
+            permissions=['mail.mark_read'],
+            recipient_domains=[],
+        )
+        credential = SimpleNamespace(
+            key_id='0123456789ab',
+            key_hash='0' * 64,
+            hash_algorithm='sha256',
+            name='Mail status agent',
+            role='agent',
+            scopes=['mail.api'],
+            mail_policy=policy,
+            expires_at=None,
+        )
+
+        payload = build_mail_credentials([credential])
+
+        self.assertEqual(
+            payload['credentials'][0]['permissions'],
+            ['mail.mark_read'],
+        )
 
 
 class NormalizedCredentialAccessTests(TestCase):

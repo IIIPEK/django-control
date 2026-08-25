@@ -66,6 +66,11 @@ For agent credentials, the inline mail policy editor accepts one mailbox and
 recipient domain per line and exposes permissions as checkboxes. Use `*` as a
 recipient domain to allow every domain.
 
+Mail permissions are independent capabilities. `mail.read` permits reading
+messages, `mail.mark_read` permits an explicit message status update without
+granting `mail.workflow`, and `mail.workflow` permits claim/complete/fail/move
+operations.
+
 FastAPI can retrieve active, non-expired credential hashes and policies from:
 
 ```text
