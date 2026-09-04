@@ -89,13 +89,77 @@ The endpoint is read-only and supports `ETag`/`If-None-Match`. The returned
 hashes are used for local verification of incoming bearer keys; plaintext API
 keys are never returned.
 
+## Microsoft Teams Graph control
+
+The `teams-graph` service contains managed configuration for a future FastAPI
+Teams API/MCP:
+
+```text
+TEAMS_GRAPH_TENANT_ID
+TEAMS_GRAPH_CLIENT_ID
+TEAMS_GRAPH_DEFAULT_SCOPE
+TEAMS_GRAPH_TIMEOUT_SECONDS
+TEAMS_GRAPH_MAX_RETRIES
+TEAMS_GRAPH_ALLOWED_USER_IDS
+TEAMS_GRAPH_ALLOWED_USER_PRINCIPALS
+TEAMS_GRAPH_ALLOWED_TEAM_IDS
+TEAMS_GRAPH_ALLOWED_CHANNEL_IDS
+TEAMS_GRAPH_ALLOWED_CHAT_IDS
+TEAMS_GRAPH_MAX_DAYS_BACK
+TEAMS_GRAPH_MAX_RESULTS
+TEAMS_GRAPH_ATTACHMENTS_ENABLED
+```
+
+`TEAMS_GRAPH_CLIENT_SECRET` is intentionally absent from the managed catalog
+and remains only in the FastAPI environment file. Read the managed values with:
+
+```text
+GET /api/v1/config/production/?service=teams-graph
+Authorization: Bearer <DJANGO_CONFIG_API_KEY>
+```
+
+Migration `0005` creates the `teams-agent` access role with these scopes:
+
+```text
+teams.messages.search
+teams.messages.read
+teams.attachments.read
+```
+
+Create a Teams credential under **API credentials**, select the `teams-agent`
+access role, and fill the collapsed **Teams Graph policy** section. Resource
+lists accept one ID or principal per line; `Maximum days back` is an optional
+per-credential restriction. The general credentials endpoint returns the
+policy without exposing the plaintext key:
+
+```json
+{
+  "key_id": "0123456789ab",
+  "key_hash": "<sha256>",
+  "roles": ["teams-agent"],
+  "scopes": [
+    "teams.attachments.read",
+    "teams.messages.read",
+    "teams.messages.search"
+  ],
+  "policy": {
+    "allowed_user_ids": ["user-id"],
+    "allowed_user_principals": ["agent@example.com"],
+    "allowed_team_ids": ["team-id"],
+    "allowed_channel_ids": ["channel-id"],
+    "allowed_chat_ids": ["chat-id"],
+    "max_days_back": 14
+  }
+}
+```
+
 ## Access roles and SQL profiles
 
 API scopes are normalized database records and are assigned through reusable
 access roles. The credentials endpoint remains schema version 2 for FastAPI
 compatibility and now also returns role codes and SQL profile codes. Standard
-roles created by the migration include `mail-agent`, `sql-consumer`,
-`sql-maintainer`, `voice-client`, and `diarization-client`.
+roles created by the migrations include `mail-agent`, `sql-consumer`,
+`sql-maintainer`, `voice-client`, `diarization-client`, and `teams-agent`.
 
 The legacy `sql.query` scope remains on SQL roles during the FastAPI migration.
 The granular SQL scopes are:

@@ -1,6 +1,10 @@
 from types import SimpleNamespace
+from io import StringIO
+from pathlib import Path
+import tempfile
 
-from django.test import SimpleTestCase, override_settings
+from django.core.management import call_command
+from django.test import SimpleTestCase, TestCase, override_settings
 
 from control.api.services import build_effective_config
 from control.models import ParameterDefinition
@@ -89,6 +93,42 @@ class EffectiveConfigPayloadTests(SimpleTestCase):
         }
         values.update(overrides)
         return SimpleNamespace(**values)
+
+
+@override_settings(CONFIG_API_KEY='test-service-token')
+class TeamsConfigAPITests(TestCase):
+    def test_teams_graph_config_is_returned_without_client_secret(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            env_path = Path(temporary_directory) / 'teams.env'
+            env_path.write_text(
+                'TEAMS_GRAPH_TENANT_ID=tenant-id\n'
+                'TEAMS_GRAPH_CLIENT_ID=client-id\n'
+                'TEAMS_GRAPH_CLIENT_SECRET=must-not-leak\n'
+                'TEAMS_GRAPH_ALLOWED_TEAM_IDS=team-1,team-2\n',
+                encoding='utf-8',
+            )
+            call_command(
+                'sync_fastapi_catalog',
+                env_file=env_path,
+                environment='production',
+                stdout=StringIO(),
+            )
+
+        response = self.client.get(
+            '/api/v1/config/production/?service=teams-graph',
+            headers={'Authorization': 'Bearer test-service-token'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        values = response.json()['values']['teams-graph']
+        self.assertEqual(values['TEAMS_GRAPH_TENANT_ID'], 'tenant-id')
+        self.assertEqual(values['TEAMS_GRAPH_CLIENT_ID'], 'client-id')
+        self.assertEqual(values['TEAMS_GRAPH_DEFAULT_SCOPE'], 'https://graph.microsoft.com/.default')
+        self.assertEqual(values['TEAMS_GRAPH_ALLOWED_TEAM_IDS'], 'team-1,team-2')
+        self.assertEqual(values['TEAMS_GRAPH_MAX_DAYS_BACK'], 30)
+        self.assertEqual(values['TEAMS_GRAPH_MAX_RESULTS'], 50)
+        self.assertIs(values['TEAMS_GRAPH_ATTACHMENTS_ENABLED'], True)
+        self.assertNotIn('TEAMS_GRAPH_CLIENT_SECRET', values)
 
 
 @override_settings(CONFIG_API_KEY='test-service-token')

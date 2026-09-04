@@ -202,6 +202,24 @@ class ApiCredentialAdmin(admin.ModelAdmin):
             },
         ),
         (
+            'Teams Graph policy',
+            {
+                'fields': (
+                    'teams_allowed_user_ids',
+                    'teams_allowed_user_principals',
+                    'teams_allowed_team_ids',
+                    'teams_allowed_channel_ids',
+                    'teams_allowed_chat_ids',
+                    'teams_max_days_back',
+                ),
+                'classes': ('collapse',),
+                'description': (
+                    'Optional resource restrictions for credentials using the '
+                    'teams-agent access role.'
+                ),
+            },
+        ),
+        (
             'API key',
             {
                 'fields': (

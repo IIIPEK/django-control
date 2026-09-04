@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from control.api.auth import require_config_api_key
-from control.api.credential_services import build_credentials
+from control.api.credential_services import build_credentials, build_mail_credentials
 from control.api.services import build_effective_config
 from control.api.sql_catalog_services import build_sql_catalog
 from control.models import (
@@ -185,7 +185,11 @@ def _credentials_response(
             for credential in credential_values
             if required_scope in credential.scopes
         ]
-    payload = build_credentials(credential_values)
+    payload = (
+        build_mail_credentials(credential_values)
+        if required_scope == ApiCredential.Scope.MAIL_API
+        else build_credentials(credential_values)
+    )
     payload['environment'] = environment
     etag = f'"{payload["version"]}"'
     if request.headers.get('If-None-Match') == etag:

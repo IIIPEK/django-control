@@ -316,6 +316,14 @@ MAIL_AGENT_PERMISSIONS = (
     ('mail.workflow', 'Run mail workflow'),
 )
 MAIL_AGENT_PERMISSION_CODES = frozenset(code for code, _label in MAIL_AGENT_PERMISSIONS)
+TEAMS_POLICY_LIST_FIELDS = (
+    'allowed_user_ids',
+    'allowed_user_principals',
+    'allowed_team_ids',
+    'allowed_channel_ids',
+    'allowed_chat_ids',
+)
+TEAMS_POLICY_FIELDS = frozenset((*TEAMS_POLICY_LIST_FIELDS, 'max_days_back'))
 
 
 def api_key_digest(raw_key: str) -> str:
@@ -435,6 +443,9 @@ class ApiCredential(models.Model):
         SQL_QUERY_UPLOAD = 'sql.query.upload'
         VOICE_TRANSCRIBE = 'voice.transcribe'
         DIARIZATION_RUN = 'diarization.run'
+        TEAMS_MESSAGES_SEARCH = 'teams.messages.search'
+        TEAMS_MESSAGES_READ = 'teams.messages.read'
+        TEAMS_ATTACHMENTS_READ = 'teams.attachments.read'
 
     id = models.BigAutoField(primary_key=True)
     environment = models.CharField(
@@ -457,6 +468,7 @@ class ApiCredential(models.Model):
         related_name='credentials',
         blank=True,
     )
+    policy = models.JSONField(default=dict, blank=True)
     key_id = models.CharField(max_length=12, unique=True, editable=False)
     key_hash = models.CharField(max_length=64, unique=True, editable=False)
     hash_algorithm = models.CharField(
@@ -556,8 +568,48 @@ class ApiCredential(models.Model):
             errors['key_hash'] = 'Key hash must be a hexadecimal SHA-256 digest.'
         if self.key_hash and self.key_id and not self.key_hash.startswith(self.key_id):
             errors['key_id'] = 'Key ID must match the stored hash prefix.'
+        try:
+            self.policy = self._normalize_policy(self.policy)
+        except ValidationError as exc:
+            errors['policy'] = '; '.join(exc.messages)
         if errors:
             raise ValidationError(errors)
+
+    @staticmethod
+    def _normalize_policy(value: Any) -> dict[str, Any]:
+        if not isinstance(value, dict):
+            raise ValidationError('Credential policy must be a JSON object.')
+        unknown = sorted(set(value) - TEAMS_POLICY_FIELDS)
+        if unknown:
+            raise ValidationError(
+                f'Unknown credential policy fields: {", ".join(unknown)}.'
+            )
+
+        normalized: dict[str, Any] = {}
+        for field_name in TEAMS_POLICY_LIST_FIELDS:
+            items = value.get(field_name, [])
+            if not isinstance(items, list):
+                raise ValidationError(f'{field_name} must be a JSON array.')
+            cleaned: list[str] = []
+            for item in items:
+                if not isinstance(item, str) or not item.strip():
+                    raise ValidationError(
+                        f'{field_name} must contain only non-empty strings.'
+                    )
+                cleaned.append(item.strip())
+            if cleaned:
+                normalized[field_name] = list(dict.fromkeys(cleaned))
+
+        max_days_back = value.get('max_days_back')
+        if max_days_back is not None:
+            if (
+                isinstance(max_days_back, bool)
+                or not isinstance(max_days_back, int)
+                or max_days_back <= 0
+            ):
+                raise ValidationError('max_days_back must be a positive integer or null.')
+            normalized['max_days_back'] = max_days_back
+        return normalized
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.full_clean()

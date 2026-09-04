@@ -10,6 +10,7 @@ from control.models import (
     ApiCredential,
     MailAgentPolicy,
     SqlAccessProfile,
+    TEAMS_POLICY_LIST_FIELDS,
     generate_api_key,
 )
 
@@ -45,6 +46,42 @@ class ApiCredentialAdminForm(forms.ModelForm):
         required=False,
         help_text='The generated key is shown once immediately after saving.',
     )
+    teams_allowed_user_ids = forms.CharField(
+        label='Allowed user IDs',
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}),
+        help_text='One Microsoft Graph user ID per line.',
+    )
+    teams_allowed_user_principals = forms.CharField(
+        label='Allowed user principals',
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}),
+        help_text='One user principal name per line.',
+    )
+    teams_allowed_team_ids = forms.CharField(
+        label='Allowed team IDs',
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}),
+        help_text='One Microsoft Graph team ID per line.',
+    )
+    teams_allowed_channel_ids = forms.CharField(
+        label='Allowed channel IDs',
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}),
+        help_text='One Microsoft Graph channel ID per line.',
+    )
+    teams_allowed_chat_ids = forms.CharField(
+        label='Allowed chat IDs',
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}),
+        help_text='One Microsoft Graph chat ID per line.',
+    )
+    teams_max_days_back = forms.IntegerField(
+        label='Maximum days back',
+        required=False,
+        min_value=1,
+        help_text='Optional per-credential history limit.',
+    )
 
     class Meta:
         model = ApiCredential
@@ -73,6 +110,12 @@ class ApiCredentialAdminForm(forms.ModelForm):
         if self.instance.pk:
             self.initial['selected_access_roles'] = self.instance.access_roles.all()
             self.initial['selected_sql_profiles'] = self.instance.sql_profiles.all()
+            policy = self.instance.policy or {}
+            for field_name in TEAMS_POLICY_LIST_FIELDS:
+                self.initial[f'teams_{field_name}'] = '\n'.join(
+                    policy.get(field_name, [])
+                )
+            self.initial['teams_max_days_back'] = policy.get('max_days_back')
 
     def clean(self):
         cleaned_data = super().clean()
@@ -103,7 +146,29 @@ class ApiCredentialAdminForm(forms.ModelForm):
             self.instance._generated_raw_key = raw_key
         if raw_key:
             self.instance.set_key(raw_key)
+        policy = dict(self.instance.policy or {})
+        for field_name in TEAMS_POLICY_LIST_FIELDS:
+            form_value = cleaned_data.get(f'teams_{field_name}', '')
+            items = self._policy_lines(form_value)
+            if items:
+                policy[field_name] = items
+            else:
+                policy.pop(field_name, None)
+        max_days_back = cleaned_data.get('teams_max_days_back')
+        if max_days_back is None:
+            policy.pop('max_days_back', None)
+        else:
+            policy['max_days_back'] = max_days_back
+        self.instance.policy = policy
         return cleaned_data
+
+    @staticmethod
+    def _policy_lines(value: str) -> list[str]:
+        return list(
+            dict.fromkeys(
+                line.strip() for line in value.splitlines() if line.strip()
+            )
+        )
 
     def _save_m2m(self):
         super()._save_m2m()

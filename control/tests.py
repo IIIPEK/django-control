@@ -161,3 +161,21 @@ class FastAPICatalogTests(SimpleTestCase):
         spec = PARAMETERS_BY_KEY['WHISPER_DIARIZATION_ENABLED']
 
         self.assertIs(parse_env_value(spec, 'true'), True)
+
+    def test_teams_graph_catalog_definitions(self):
+        teams_specs = {
+            spec.key: spec for spec in PARAMETERS if spec.service == 'teams-graph'
+        }
+
+        self.assertEqual(len(teams_specs), 13)
+        self.assertNotIn('TEAMS_GRAPH_CLIENT_SECRET', teams_specs)
+        self.assertEqual(
+            teams_specs['TEAMS_GRAPH_DEFAULT_SCOPE'].default_value,
+            'https://graph.microsoft.com/.default',
+        )
+        self.assertEqual(teams_specs['TEAMS_GRAPH_MAX_DAYS_BACK'].default_value, 30)
+        self.assertEqual(teams_specs['TEAMS_GRAPH_MAX_RESULTS'].default_value, 50)
+        self.assertIs(
+            teams_specs['TEAMS_GRAPH_ATTACHMENTS_ENABLED'].default_value,
+            True,
+        )

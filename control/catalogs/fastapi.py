@@ -44,6 +44,7 @@ CATEGORIES = (
     CategorySpec('voice', 'Voice and diarization', 'Whisper, diarization и обработка аудио.', 80),
     CategorySpec('mail', 'Microsoft Graph mail', 'Почтовый gateway, вложения и worker.', 90),
     CategorySpec('digidoc', 'DigiDoc and SiVa', 'Проверка и распаковка DigiDoc-контейнеров.', 100),
+    CategorySpec('teams', 'Microsoft Teams Graph', 'Доступ к сообщениям и вложениям Microsoft Teams.', 105),
     CategorySpec('security', 'Credentials and access', 'Секреты, остающиеся во внешнем окружении.', 110),
 )
 
@@ -168,6 +169,20 @@ PARAMETERS = (
     _spec('MAIL_GRAPH_MAX_CONTAINER_FILES', 'digidoc', 'mail-graph', 'Maximum container files', 'Максимальное число файлов внутри контейнера.', data_type='integer', default=50, rules={'min': 1}, order=50),
     _spec('MAIL_GRAPH_MAX_CONTAINER_EXPANDED_MB', 'digidoc', 'mail-graph', 'Maximum expanded container', 'Максимальный распакованный размер контейнера в MiB.', data_type='integer', default=100, rules={'min': 1}, order=60),
     _spec('MAIL_GRAPH_ALLOWED_CONTAINER_EXTENSIONS', 'digidoc', 'mail-graph', 'Allowed container extensions', 'Разделённый запятыми список типов DigiDoc-контейнеров.', default='asice,bdoc,ddoc', order=70),
+
+    _spec('TEAMS_GRAPH_TENANT_ID', 'teams', 'teams-graph', 'Azure tenant ID', 'Tenant ID приложения Microsoft Graph для Teams.', required=True, order=10),
+    _spec('TEAMS_GRAPH_CLIENT_ID', 'teams', 'teams-graph', 'Azure client ID', 'Client ID приложения Microsoft Graph для Teams.', required=True, order=20),
+    _spec('TEAMS_GRAPH_DEFAULT_SCOPE', 'teams', 'teams-graph', 'Default Graph scope', 'OAuth scope Microsoft Graph для client credentials flow.', data_type='url', default='https://graph.microsoft.com/.default', order=30),
+    _spec('TEAMS_GRAPH_TIMEOUT_SECONDS', 'teams', 'teams-graph', 'Graph request timeout', 'Таймаут запроса Microsoft Graph в секундах.', data_type='float', default=30, rules={'min': 1, 'max': 3600}, order=40),
+    _spec('TEAMS_GRAPH_MAX_RETRIES', 'teams', 'teams-graph', 'Graph maximum retries', 'Максимальное число повторов запроса Microsoft Graph.', data_type='integer', default=4, rules={'min': 0, 'max': 20}, order=50),
+    _spec('TEAMS_GRAPH_ALLOWED_USER_IDS', 'teams', 'teams-graph', 'Allowed user IDs', 'Разделённый запятыми список разрешённых Microsoft Graph user IDs.', default='', order=60),
+    _spec('TEAMS_GRAPH_ALLOWED_USER_PRINCIPALS', 'teams', 'teams-graph', 'Allowed user principals', 'Разделённый запятыми список разрешённых user principal names.', default='', order=70),
+    _spec('TEAMS_GRAPH_ALLOWED_TEAM_IDS', 'teams', 'teams-graph', 'Allowed team IDs', 'Разделённый запятыми список разрешённых Microsoft Graph team IDs.', default='', order=80),
+    _spec('TEAMS_GRAPH_ALLOWED_CHANNEL_IDS', 'teams', 'teams-graph', 'Allowed channel IDs', 'Разделённый запятыми список разрешённых Microsoft Graph channel IDs.', default='', order=90),
+    _spec('TEAMS_GRAPH_ALLOWED_CHAT_IDS', 'teams', 'teams-graph', 'Allowed chat IDs', 'Разделённый запятыми список разрешённых Microsoft Graph chat IDs.', default='', order=100),
+    _spec('TEAMS_GRAPH_MAX_DAYS_BACK', 'teams', 'teams-graph', 'Maximum days back', 'Глобальное ограничение глубины поиска сообщений в днях.', data_type='integer', default=30, rules={'min': 1, 'max': 3650}, order=110),
+    _spec('TEAMS_GRAPH_MAX_RESULTS', 'teams', 'teams-graph', 'Maximum results', 'Глобальное ограничение числа результатов Teams Graph.', data_type='integer', default=50, rules={'min': 1, 'max': 1000}, order=120),
+    _spec('TEAMS_GRAPH_ATTACHMENTS_ENABLED', 'teams', 'teams-graph', 'Enable attachments', 'Разрешить получение вложений Teams Graph.', data_type='boolean', default=True, order=130),
 )
 
 
