@@ -187,9 +187,11 @@ class FastAPICatalogTests(SimpleTestCase):
             if spec.service == 'teams-transcript-worker'
         }
 
-        self.assertEqual(len(worker_specs), 21)
+        self.assertEqual(len(worker_specs), 20)
         self.assertNotIn('TEAMS_TRANSCRIPT_CLIENT_SECRET', worker_specs)
         self.assertNotIn('TEAMS_TRANSCRIPT_NOTIFICATION_CLIENT_STATE', worker_specs)
+        self.assertNotIn('TEAMS_TRANSCRIPT_PUBLIC_BASE_URL', worker_specs)
+        self.assertNotIn('TEAMS_TRANSCRIPT_NOTIFICATION_PATH', worker_specs)
         self.assertEqual(
             worker_specs['TEAMS_TRANSCRIPT_GRAPH_SCOPE'].default_value,
             'https://graph.microsoft.com/.default',

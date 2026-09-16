@@ -136,11 +136,11 @@ class TeamsConfigAPITests(TestCase):
             env_path.write_text(
                 'TEAMS_TRANSCRIPT_TENANT_ID=tenant-id\n'
                 'TEAMS_TRANSCRIPT_CLIENT_ID=client-id\n'
-                'TEAMS_TRANSCRIPT_KATE_USER_ID=kate-id\n'
-                'TEAMS_TRANSCRIPT_NIK_USER_ID=nik-id\n'
+                'TEAMS_TRANSCRIPT_FOCUS_USER_ID=focus-user-id\n'
+                'TEAMS_TRANSCRIPT_PRIORITY_CONTACT_USER_ID=priority-contact-id\n'
                 'TEAMS_TRANSCRIPT_SALES_GROUP_ID=sales-group-id\n'
                 'TEAMS_TRANSCRIPT_SHAREPOINT_SITE_ID=sharepoint-site-id\n'
-                'TEAMS_TRANSCRIPT_PUBLIC_BASE_URL=https://transcripts.example.com\n'
+                'TEAMS_TRANSCRIPT_NOTIFICATION_URL=https://transcripts.example.com/api/teams-transcripts/graph-notifications\n'
                 'TEAMS_TRANSCRIPT_LOOKBACK_HOURS=48\n'
                 'TEAMS_TRANSCRIPT_CLIENT_SECRET=must-not-leak\n'
                 'TEAMS_TRANSCRIPT_NOTIFICATION_CLIENT_STATE=must-not-leak\n',
@@ -163,6 +163,15 @@ class TeamsConfigAPITests(TestCase):
         values = payload['values']['teams-transcript-worker']
         self.assertEqual(values['TEAMS_TRANSCRIPT_TENANT_ID'], 'tenant-id')
         self.assertEqual(values['TEAMS_TRANSCRIPT_CLIENT_ID'], 'client-id')
+        self.assertEqual(values['TEAMS_TRANSCRIPT_FOCUS_USER_ID'], 'focus-user-id')
+        self.assertEqual(
+            values['TEAMS_TRANSCRIPT_PRIORITY_CONTACT_USER_ID'],
+            'priority-contact-id',
+        )
+        self.assertEqual(
+            values['TEAMS_TRANSCRIPT_NOTIFICATION_URL'],
+            'https://transcripts.example.com/api/teams-transcripts/graph-notifications',
+        )
         self.assertEqual(values['TEAMS_TRANSCRIPT_LOOKBACK_HOURS'], 48)
         self.assertEqual(
             values['TEAMS_TRANSCRIPT_GRAPH_SCOPE'],
@@ -175,6 +184,8 @@ class TeamsConfigAPITests(TestCase):
         self.assertEqual(payload['missing_required']['teams-transcript-worker'], [])
         self.assertNotIn('TEAMS_TRANSCRIPT_CLIENT_SECRET', values)
         self.assertNotIn('TEAMS_TRANSCRIPT_NOTIFICATION_CLIENT_STATE', values)
+        self.assertNotIn('TEAMS_TRANSCRIPT_PUBLIC_BASE_URL', values)
+        self.assertNotIn('TEAMS_TRANSCRIPT_NOTIFICATION_PATH', values)
 
 
 @override_settings(CONFIG_API_KEY='test-service-token')
