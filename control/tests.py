@@ -179,3 +179,28 @@ class FastAPICatalogTests(SimpleTestCase):
             teams_specs['TEAMS_GRAPH_ATTACHMENTS_ENABLED'].default_value,
             True,
         )
+
+    def test_teams_transcript_worker_catalog_definitions(self):
+        worker_specs = {
+            spec.key: spec
+            for spec in PARAMETERS
+            if spec.service == 'teams-transcript-worker'
+        }
+
+        self.assertEqual(len(worker_specs), 21)
+        self.assertNotIn('TEAMS_TRANSCRIPT_CLIENT_SECRET', worker_specs)
+        self.assertNotIn('TEAMS_TRANSCRIPT_NOTIFICATION_CLIENT_STATE', worker_specs)
+        self.assertEqual(
+            worker_specs['TEAMS_TRANSCRIPT_GRAPH_SCOPE'].default_value,
+            'https://graph.microsoft.com/.default',
+        )
+        self.assertEqual(
+            worker_specs[
+                'TEAMS_TRANSCRIPT_RECONCILIATION_INTERVAL_SECONDS'
+            ].default_value,
+            300,
+        )
+        self.assertEqual(
+            worker_specs['TEAMS_TRANSCRIPT_SALES_CACHE_TTL_SECONDS'].default_value,
+            900,
+        )

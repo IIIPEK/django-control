@@ -153,6 +153,57 @@ policy without exposing the plaintext key:
 }
 ```
 
+## Teams Transcript Worker control
+
+The separate `teams-transcript-worker` service contains non-secret managed
+configuration for the Teams transcript archiver:
+
+```text
+TEAMS_TRANSCRIPT_TENANT_ID
+TEAMS_TRANSCRIPT_CLIENT_ID
+TEAMS_TRANSCRIPT_GRAPH_SCOPE
+TEAMS_TRANSCRIPT_KATE_USER_ID
+TEAMS_TRANSCRIPT_NIK_USER_ID
+TEAMS_TRANSCRIPT_SALES_GROUP_ID
+TEAMS_TRANSCRIPT_SHAREPOINT_SITE_ID
+TEAMS_TRANSCRIPT_SHAREPOINT_LIBRARY_NAME
+TEAMS_TRANSCRIPT_SOURCE_ROOT_PATH
+TEAMS_TRANSCRIPT_SALES_PATH
+TEAMS_TRANSCRIPT_NIK_PATH
+TEAMS_TRANSCRIPT_GROUP_CALLS_PATH
+TEAMS_TRANSCRIPT_PUBLIC_BASE_URL
+TEAMS_TRANSCRIPT_NOTIFICATION_PATH
+TEAMS_TRANSCRIPT_TIMEZONE
+TEAMS_TRANSCRIPT_GRAPH_TIMEOUT_SECONDS
+TEAMS_TRANSCRIPT_GRAPH_MAX_RETRIES
+TEAMS_TRANSCRIPT_RECONCILIATION_INTERVAL_SECONDS
+TEAMS_TRANSCRIPT_LOOKBACK_HOURS
+TEAMS_TRANSCRIPT_SALES_CACHE_TTL_SECONDS
+TEAMS_TRANSCRIPT_SUBSCRIPTION_RENEW_BEFORE_MINUTES
+```
+
+The worker is a managed-config service, not an access role. Its Graph client
+secret, notification `clientState`, state database URL, and Django Control API
+key remain only in the worker environment file. They are intentionally absent
+from this catalog.
+
+Import the non-secret values and defaults with:
+
+```powershell
+python manage.py sync_fastapi_catalog `
+  --env-file "C:\iv\Python\django-control\no_commit\teams-transcript-worker-managed.env" `
+  --environment production `
+  --dry-run
+```
+
+After reviewing the dry run, repeat without `--dry-run`. The worker reads the
+effective values from:
+
+```text
+GET /api/v1/config/production/?service=teams-transcript-worker
+Authorization: Bearer <DJANGO_CONFIG_API_KEY>
+```
+
 ## Access roles and SQL profiles
 
 API scopes are normalized database records and are assigned through reusable

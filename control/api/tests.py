@@ -130,6 +130,52 @@ class TeamsConfigAPITests(TestCase):
         self.assertIs(values['TEAMS_GRAPH_ATTACHMENTS_ENABLED'], True)
         self.assertNotIn('TEAMS_GRAPH_CLIENT_SECRET', values)
 
+    def test_teams_transcript_worker_config_is_returned_without_secrets(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            env_path = Path(temporary_directory) / 'teams-transcript-worker.env'
+            env_path.write_text(
+                'TEAMS_TRANSCRIPT_TENANT_ID=tenant-id\n'
+                'TEAMS_TRANSCRIPT_CLIENT_ID=client-id\n'
+                'TEAMS_TRANSCRIPT_KATE_USER_ID=kate-id\n'
+                'TEAMS_TRANSCRIPT_NIK_USER_ID=nik-id\n'
+                'TEAMS_TRANSCRIPT_SALES_GROUP_ID=sales-group-id\n'
+                'TEAMS_TRANSCRIPT_SHAREPOINT_SITE_ID=sharepoint-site-id\n'
+                'TEAMS_TRANSCRIPT_PUBLIC_BASE_URL=https://transcripts.example.com\n'
+                'TEAMS_TRANSCRIPT_LOOKBACK_HOURS=48\n'
+                'TEAMS_TRANSCRIPT_CLIENT_SECRET=must-not-leak\n'
+                'TEAMS_TRANSCRIPT_NOTIFICATION_CLIENT_STATE=must-not-leak\n',
+                encoding='utf-8',
+            )
+            call_command(
+                'sync_fastapi_catalog',
+                env_file=env_path,
+                environment='production',
+                stdout=StringIO(),
+            )
+
+        response = self.client.get(
+            '/api/v1/config/production/?service=teams-transcript-worker',
+            headers={'Authorization': 'Bearer test-service-token'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        values = payload['values']['teams-transcript-worker']
+        self.assertEqual(values['TEAMS_TRANSCRIPT_TENANT_ID'], 'tenant-id')
+        self.assertEqual(values['TEAMS_TRANSCRIPT_CLIENT_ID'], 'client-id')
+        self.assertEqual(values['TEAMS_TRANSCRIPT_LOOKBACK_HOURS'], 48)
+        self.assertEqual(
+            values['TEAMS_TRANSCRIPT_GRAPH_SCOPE'],
+            'https://graph.microsoft.com/.default',
+        )
+        self.assertEqual(
+            values['TEAMS_TRANSCRIPT_SHAREPOINT_LIBRARY_NAME'],
+            'Documents',
+        )
+        self.assertEqual(payload['missing_required']['teams-transcript-worker'], [])
+        self.assertNotIn('TEAMS_TRANSCRIPT_CLIENT_SECRET', values)
+        self.assertNotIn('TEAMS_TRANSCRIPT_NOTIFICATION_CLIENT_STATE', values)
+
 
 @override_settings(CONFIG_API_KEY='test-service-token')
 class ConfigAPIRequestValidationTests(SimpleTestCase):

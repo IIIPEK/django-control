@@ -45,6 +45,7 @@ CATEGORIES = (
     CategorySpec('mail', 'Microsoft Graph mail', 'Почтовый gateway, вложения и worker.', 90),
     CategorySpec('digidoc', 'DigiDoc and SiVa', 'Проверка и распаковка DigiDoc-контейнеров.', 100),
     CategorySpec('teams', 'Microsoft Teams Graph', 'Доступ к сообщениям и вложениям Microsoft Teams.', 105),
+    CategorySpec('teams-transcripts', 'Teams transcripts', 'Архивация транскрипций Teams в SharePoint.', 107),
     CategorySpec('security', 'Credentials and access', 'Секреты, остающиеся во внешнем окружении.', 110),
 )
 
@@ -183,6 +184,28 @@ PARAMETERS = (
     _spec('TEAMS_GRAPH_MAX_DAYS_BACK', 'teams', 'teams-graph', 'Maximum days back', 'Глобальное ограничение глубины поиска сообщений в днях.', data_type='integer', default=30, rules={'min': 1, 'max': 3650}, order=110),
     _spec('TEAMS_GRAPH_MAX_RESULTS', 'teams', 'teams-graph', 'Maximum results', 'Глобальное ограничение числа результатов Teams Graph.', data_type='integer', default=50, rules={'min': 1, 'max': 1000}, order=120),
     _spec('TEAMS_GRAPH_ATTACHMENTS_ENABLED', 'teams', 'teams-graph', 'Enable attachments', 'Разрешить получение вложений Teams Graph.', data_type='boolean', default=True, order=130),
+
+    _spec('TEAMS_TRANSCRIPT_TENANT_ID', 'teams-transcripts', 'teams-transcript-worker', 'Azure tenant ID', 'Tenant ID приложения Teams Transcript Worker.', required=True, order=10),
+    _spec('TEAMS_TRANSCRIPT_CLIENT_ID', 'teams-transcripts', 'teams-transcript-worker', 'Azure client ID', 'Client ID приложения Teams Transcript Worker; client secret остаётся только в окружении worker-а.', required=True, order=20),
+    _spec('TEAMS_TRANSCRIPT_GRAPH_SCOPE', 'teams-transcripts', 'teams-transcript-worker', 'Microsoft Graph scope', 'OAuth scope Microsoft Graph для client credentials flow.', data_type='url', default='https://graph.microsoft.com/.default', order=30),
+    _spec('TEAMS_TRANSCRIPT_KATE_USER_ID', 'teams-transcripts', 'teams-transcript-worker', 'Kate user ID', 'Entra Object ID Катерины для классификации участников.', required=True, restart=False, order=40),
+    _spec('TEAMS_TRANSCRIPT_NIK_USER_ID', 'teams-transcripts', 'teams-transcript-worker', 'Nik user ID', 'Entra Object ID Николая для классификации участников.', required=True, restart=False, order=50),
+    _spec('TEAMS_TRANSCRIPT_SALES_GROUP_ID', 'teams-transcripts', 'teams-transcript-worker', 'Sales group ID', 'Entra Object ID группы Sales, состав которой worker обновляет динамически.', required=True, restart=False, order=60),
+    _spec('TEAMS_TRANSCRIPT_SHAREPOINT_SITE_ID', 'teams-transcripts', 'teams-transcript-worker', 'SharePoint site ID', 'Microsoft Graph site ID выделенного архива транскрипций.', required=True, restart=False, order=70),
+    _spec('TEAMS_TRANSCRIPT_SHAREPOINT_LIBRARY_NAME', 'teams-transcripts', 'teams-transcript-worker', 'SharePoint library', 'Имя библиотеки документов SharePoint.', default='Documents', rules={'min_length': 1}, restart=False, order=80),
+    _spec('TEAMS_TRANSCRIPT_SOURCE_ROOT_PATH', 'teams-transcripts', 'teams-transcript-worker', 'Source transcripts root', 'Корневая папка исходных транскрипций внутри библиотеки SharePoint.', default='Source transcripts/Kate Samedova', rules={'min_length': 1}, restart=False, order=90),
+    _spec('TEAMS_TRANSCRIPT_SALES_PATH', 'teams-transcripts', 'teams-transcript-worker', 'Sales folder', 'Папка транскрипций разговоров Катерины с Sales.', default='Sales', rules={'min_length': 1}, restart=False, order=100),
+    _spec('TEAMS_TRANSCRIPT_NIK_PATH', 'teams-transcripts', 'teams-transcript-worker', 'Nik folder', 'Папка транскрипций разговоров Катерины с Николаем.', default='Nik', rules={'min_length': 1}, restart=False, order=110),
+    _spec('TEAMS_TRANSCRIPT_GROUP_CALLS_PATH', 'teams-transcripts', 'teams-transcript-worker', 'Group calls folder', 'Папка транскрипций групповых звонков с Катериной.', default='Group calls', rules={'min_length': 1}, restart=False, order=120),
+    _spec('TEAMS_TRANSCRIPT_PUBLIC_BASE_URL', 'teams-transcripts', 'teams-transcript-worker', 'Public base URL', 'Публичный HTTPS base URL callback API, доступный Microsoft Graph.', data_type='url', required=True, order=130),
+    _spec('TEAMS_TRANSCRIPT_NOTIFICATION_PATH', 'teams-transcripts', 'teams-transcript-worker', 'Notification path', 'Путь endpoint для Microsoft Graph change notifications.', default='/api/teams-transcripts/graph-notifications', rules={'regex': '^/[^\\s]*$'}, order=140),
+    _spec('TEAMS_TRANSCRIPT_TIMEZONE', 'teams-transcripts', 'teams-transcript-worker', 'Local timezone', 'IANA timezone для имён файлов и отображаемого времени.', default='Europe/Tallinn', rules={'min_length': 1}, restart=False, order=150),
+    _spec('TEAMS_TRANSCRIPT_GRAPH_TIMEOUT_SECONDS', 'teams-transcripts', 'teams-transcript-worker', 'Graph request timeout', 'Таймаут запроса Microsoft Graph в секундах.', data_type='float', default=30, rules={'min': 1, 'max': 3600}, restart=False, order=160),
+    _spec('TEAMS_TRANSCRIPT_GRAPH_MAX_RETRIES', 'teams-transcripts', 'teams-transcript-worker', 'Graph maximum retries', 'Максимальное число повторов запроса Microsoft Graph.', data_type='integer', default=4, rules={'min': 0, 'max': 20}, restart=False, order=170),
+    _spec('TEAMS_TRANSCRIPT_RECONCILIATION_INTERVAL_SECONDS', 'teams-transcripts', 'teams-transcript-worker', 'Reconciliation interval', 'Интервал резервной сверки транскрипций в секундах.', data_type='integer', default=300, rules={'min': 30, 'max': 86400}, restart=False, order=180),
+    _spec('TEAMS_TRANSCRIPT_LOOKBACK_HOURS', 'teams-transcripts', 'teams-transcript-worker', 'Reconciliation lookback', 'Глубина резервной сверки транскрипций в часах.', data_type='integer', default=24, rules={'min': 1, 'max': 720}, restart=False, order=190),
+    _spec('TEAMS_TRANSCRIPT_SALES_CACHE_TTL_SECONDS', 'teams-transcripts', 'teams-transcript-worker', 'Sales cache TTL', 'Интервал обновления состава Entra-группы Sales в секундах.', data_type='integer', default=900, rules={'min': 60, 'max': 86400}, restart=False, order=200),
+    _spec('TEAMS_TRANSCRIPT_SUBSCRIPTION_RENEW_BEFORE_MINUTES', 'teams-transcripts', 'teams-transcript-worker', 'Subscription renewal margin', 'За сколько минут до истечения продлевать Graph subscriptions.', data_type='integer', default=60, rules={'min': 5, 'max': 1440}, restart=False, order=210),
 )
 
 
