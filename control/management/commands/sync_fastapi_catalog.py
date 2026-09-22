@@ -37,11 +37,17 @@ class Command(BaseCommand):
             action='store_true',
             help='Validate and report changes, then roll the transaction back.',
         )
+        parser.add_argument(
+            '--no-update',
+            action='store_true',
+            help='Create missing values without changing existing values or their active status.',
+        )
 
     def handle(self, *args, **options):
         env_path: Path = options['env_file'].expanduser().resolve()
         environment: str = options['environment']
         dry_run: bool = options['dry_run']
+        no_update: bool = options['no_update']
 
         if not env_path.is_file():
             raise CommandError(f'Env file not found: {env_path}')
@@ -52,6 +58,7 @@ class Command(BaseCommand):
         values_created = 0
         values_updated = 0
         values_unchanged = 0
+        values_skipped = 0
         skipped_env_values: list[str] = []
         skipped_invalid_values: list[str] = []
 
@@ -120,7 +127,9 @@ class Command(BaseCommand):
                     )
                     values_created += 1
                 else:
-                    if current.value == value and current.is_active:
+                    if no_update:
+                        values_skipped += 1
+                    elif current.value == value and current.is_active:
                         values_unchanged += 1
                     else:
                         current.value = value
@@ -143,7 +152,7 @@ class Command(BaseCommand):
         self.stdout.write(
             'Values: '
             f'{values_created} created, {values_updated} updated, '
-            f'{values_unchanged} unchanged'
+            f'{values_unchanged} unchanged, {values_skipped} skipped (--no-update)'
         )
         self._write_key_list(
             'Env/bootstrap/secret values intentionally not imported',

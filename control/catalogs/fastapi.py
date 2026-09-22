@@ -205,6 +205,13 @@ PARAMETERS = (
     _spec('TEAMS_TRANSCRIPT_LOOKBACK_HOURS', 'teams-transcripts', 'teams-transcript-worker', 'Reconciliation lookback', 'Глубина резервной сверки транскрипций в часах.', data_type='integer', default=24, rules={'min': 1, 'max': 720}, restart=False, order=190),
     _spec('TEAMS_TRANSCRIPT_SALES_CACHE_TTL_SECONDS', 'teams-transcripts', 'teams-transcript-worker', 'Sales cache TTL', 'Интервал обновления состава Entra-группы Sales в секундах.', data_type='integer', default=900, rules={'min': 60, 'max': 86400}, restart=False, order=200),
     _spec('TEAMS_TRANSCRIPT_SUBSCRIPTION_RENEW_BEFORE_MINUTES', 'teams-transcripts', 'teams-transcript-worker', 'Subscription renewal margin', 'За сколько минут до истечения продлевать Graph subscriptions.', data_type='integer', default=60, rules={'min': 5, 'max': 1440}, restart=False, order=210),
+    _spec('TEAMS_TRANSCRIPT_SUMMARY_ENABLED', 'teams-transcripts', 'teams-transcript-worker', 'Enable summaries', 'Разрешить создание LLM-отчётов по транскрипциям.', data_type='boolean', default=True, restart=False, order=220),
+    _spec('TEAMS_TRANSCRIPT_SUMMARY_LLM_URL', 'teams-transcripts', 'teams-transcript-worker', 'Summary LLM endpoint', 'OpenAI-compatible endpoint модели для создания отчётов.', data_type='url', default='http://192.168.88.207:8012/v1/chat/completions', restart=False, order=230),
+    _spec('TEAMS_TRANSCRIPT_SUMMARY_LLM_MODEL', 'teams-transcripts', 'teams-transcript-worker', 'Summary LLM model', 'Имя модели; auto означает определение worker-ом через /v1/models.', default='auto', restart=False, order=240),
+    _spec('TEAMS_TRANSCRIPT_SUMMARY_TIMEOUT_SECONDS', 'teams-transcripts', 'teams-transcript-worker', 'Summary timeout', 'Таймаут запроса к LLM в секундах.', data_type='integer', default=120, rules={'min': 1, 'max': 3600}, restart=False, order=250),
+    _spec('TEAMS_TRANSCRIPT_SUMMARY_MAX_TOKENS', 'teams-transcripts', 'teams-transcript-worker', 'Summary maximum tokens', 'Максимальное число выходных токенов LLM.', data_type='integer', default=2400, rules={'min': 1}, restart=False, order=260),
+    _spec('TEAMS_TRANSCRIPT_SUMMARY_MAX_INPUT_CHARS', 'teams-transcripts', 'teams-transcript-worker', 'Summary maximum input characters', 'Максимальное число символов входной транскрипции для LLM.', data_type='integer', default=24000, rules={'min': 1}, restart=False, order=270),
+    _spec('TEAMS_TRANSCRIPT_REPORTS_ROOT_PATH', 'teams-transcripts', 'teams-transcript-worker', 'Reports root folder', 'Корневая папка отчётов внутри библиотеки SharePoint.', default='Reports', rules={'min_length': 1}, restart=False, order=280),
 )
 
 

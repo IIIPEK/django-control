@@ -25,6 +25,11 @@ The command is idempotent. Secret and bootstrap parameters are registered in
 the catalog but their values are never copied from the env file. Unknown keys
 are reported by name and are not imported.
 
+Use `--no-update` to create only missing values while preserving existing
+values and their active status (including values edited in Admin). Catalog
+categories and definitions are still synchronized. It can be combined with
+`--dry-run`.
+
 ## Read-only configuration API
 
 The endpoint accepts one or more service query parameters:
@@ -179,7 +184,19 @@ TEAMS_TRANSCRIPT_RECONCILIATION_INTERVAL_SECONDS
 TEAMS_TRANSCRIPT_LOOKBACK_HOURS
 TEAMS_TRANSCRIPT_SALES_CACHE_TTL_SECONDS
 TEAMS_TRANSCRIPT_SUBSCRIPTION_RENEW_BEFORE_MINUTES
+TEAMS_TRANSCRIPT_SUMMARY_ENABLED
+TEAMS_TRANSCRIPT_SUMMARY_LLM_URL
+TEAMS_TRANSCRIPT_SUMMARY_LLM_MODEL
+TEAMS_TRANSCRIPT_SUMMARY_TIMEOUT_SECONDS
+TEAMS_TRANSCRIPT_SUMMARY_MAX_TOKENS
+TEAMS_TRANSCRIPT_SUMMARY_MAX_INPUT_CHARS
+TEAMS_TRANSCRIPT_REPORTS_ROOT_PATH
 ```
+
+Summary settings are managed values. When the model is `auto`, the worker must
+resolve the available model through the LLM server's `/v1/models` endpoint;
+Django only stores and returns the string. The LLM URL must be reachable from
+the worker host. Enabling summaries requires worker-side support.
 
 The worker is a managed-config service, not an access role. Its Graph client
 secret, notification `clientState`, state database URL, and Django Control API
@@ -195,7 +212,9 @@ python manage.py sync_fastapi_catalog `
   --dry-run
 ```
 
-After reviewing the dry run, repeat without `--dry-run`. The worker reads the
+To preserve worker values already edited in Admin, add `--no-update` to both
+the dry run and the applying command. After reviewing the dry run, repeat
+without `--dry-run`. The worker reads the
 effective values from:
 
 ```text

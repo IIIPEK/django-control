@@ -1,5 +1,10 @@
+from io import StringIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
 from django.core.exceptions import ValidationError
-from django.test import SimpleTestCase
+from django.core.management import call_command
+from django.test import SimpleTestCase, TestCase
 
 from control.catalogs.fastapi import (
     CATEGORIES,
@@ -187,7 +192,7 @@ class FastAPICatalogTests(SimpleTestCase):
             if spec.service == 'teams-transcript-worker'
         }
 
-        self.assertEqual(len(worker_specs), 20)
+        self.assertEqual(len(worker_specs), 27)
         self.assertNotIn('TEAMS_TRANSCRIPT_CLIENT_SECRET', worker_specs)
         self.assertNotIn('TEAMS_TRANSCRIPT_NOTIFICATION_CLIENT_STATE', worker_specs)
         self.assertNotIn('TEAMS_TRANSCRIPT_PUBLIC_BASE_URL', worker_specs)
@@ -206,3 +211,64 @@ class FastAPICatalogTests(SimpleTestCase):
             worker_specs['TEAMS_TRANSCRIPT_SALES_CACHE_TTL_SECONDS'].default_value,
             900,
         )
+        self.assertIs(
+            worker_specs['TEAMS_TRANSCRIPT_SUMMARY_ENABLED'].default_value,
+            True,
+        )
+        self.assertEqual(
+            worker_specs['TEAMS_TRANSCRIPT_SUMMARY_LLM_MODEL'].default_value,
+            'auto',
+        )
+        self.assertEqual(
+            worker_specs['TEAMS_TRANSCRIPT_REPORTS_ROOT_PATH'].default_value,
+            'Reports',
+        )
+
+
+class FastAPICatalogSyncTests(TestCase):
+    def test_no_update_preserves_existing_value_and_creates_missing_value(self):
+        with TemporaryDirectory() as temporary_directory:
+            env_path = Path(temporary_directory) / 'worker.env'
+            env_path.write_text(
+                'TEAMS_TRANSCRIPT_SUMMARY_ENABLED=true\n',
+                encoding='utf-8',
+            )
+            call_command(
+                'sync_fastapi_catalog',
+                env_file=env_path,
+                environment='production',
+                stdout=StringIO(),
+            )
+            existing = ParameterValue.objects.get(
+                definition__key='TEAMS_TRANSCRIPT_SUMMARY_ENABLED',
+                environment='production',
+            )
+            existing.value = False
+            existing.is_active = False
+            existing.save()
+
+            env_path.write_text(
+                'TEAMS_TRANSCRIPT_SUMMARY_ENABLED=true\n'
+                'TEAMS_TRANSCRIPT_SUMMARY_LLM_MODEL=auto\n',
+                encoding='utf-8',
+            )
+            output = StringIO()
+            call_command(
+                'sync_fastapi_catalog',
+                env_file=env_path,
+                environment='production',
+                no_update=True,
+                stdout=output,
+            )
+
+            existing.refresh_from_db()
+            self.assertIs(existing.value, False)
+            self.assertIs(existing.is_active, False)
+            self.assertEqual(
+                ParameterValue.objects.get(
+                    definition__key='TEAMS_TRANSCRIPT_SUMMARY_LLM_MODEL',
+                    environment='production',
+                ).value,
+                'auto',
+            )
+            self.assertIn('1 created, 0 updated, 0 unchanged, 1 skipped', output.getvalue())
