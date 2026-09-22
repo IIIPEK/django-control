@@ -143,6 +143,7 @@ class TeamsConfigAPITests(TestCase):
                 'TEAMS_TRANSCRIPT_NOTIFICATION_URL=https://transcripts.example.com/api/teams-transcripts/graph-notifications\n'
                 'TEAMS_TRANSCRIPT_LOOKBACK_HOURS=48\n'
                 'TEAMS_TRANSCRIPT_SUMMARY_ENABLED=true\n'
+                'TEAMS_TRANSCRIPT_SUMMARY_ENABLE_THINKING=false\n'
                 'TEAMS_TRANSCRIPT_SUMMARY_LLM_MODEL=auto\n'
                 'TEAMS_TRANSCRIPT_SUMMARY_MAX_TOKENS=2400\n'
                 'TEAMS_TRANSCRIPT_CLIENT_SECRET=must-not-leak\n'
@@ -177,6 +178,7 @@ class TeamsConfigAPITests(TestCase):
         )
         self.assertEqual(values['TEAMS_TRANSCRIPT_LOOKBACK_HOURS'], 48)
         self.assertIs(values['TEAMS_TRANSCRIPT_SUMMARY_ENABLED'], True)
+        self.assertIs(values['TEAMS_TRANSCRIPT_SUMMARY_ENABLE_THINKING'], False)
         self.assertEqual(values['TEAMS_TRANSCRIPT_SUMMARY_LLM_MODEL'], 'auto')
         self.assertEqual(values['TEAMS_TRANSCRIPT_SUMMARY_MAX_TOKENS'], 2400)
         self.assertEqual(values['TEAMS_TRANSCRIPT_REPORTS_ROOT_PATH'], 'Reports')
