@@ -192,7 +192,7 @@ class FastAPICatalogTests(SimpleTestCase):
             if spec.service == 'teams-transcript-worker'
         }
 
-        self.assertEqual(len(worker_specs), 28)
+        self.assertEqual(len(worker_specs), 29)
         self.assertNotIn('TEAMS_TRANSCRIPT_CLIENT_SECRET', worker_specs)
         self.assertNotIn('TEAMS_TRANSCRIPT_NOTIFICATION_CLIENT_STATE', worker_specs)
         self.assertNotIn('TEAMS_TRANSCRIPT_PUBLIC_BASE_URL', worker_specs)
@@ -210,6 +210,10 @@ class FastAPICatalogTests(SimpleTestCase):
         self.assertEqual(
             worker_specs['TEAMS_TRANSCRIPT_SALES_CACHE_TTL_SECONDS'].default_value,
             900,
+        )
+        self.assertEqual(
+            worker_specs['TEAMS_TRANSCRIPT_PROCESSING_STALE_SECONDS'].default_value,
+            1800,
         )
         self.assertIs(
             worker_specs['TEAMS_TRANSCRIPT_SUMMARY_ENABLED'].default_value,

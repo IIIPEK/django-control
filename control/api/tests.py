@@ -142,6 +142,7 @@ class TeamsConfigAPITests(TestCase):
                 'TEAMS_TRANSCRIPT_SHAREPOINT_SITE_ID=sharepoint-site-id\n'
                 'TEAMS_TRANSCRIPT_NOTIFICATION_URL=https://transcripts.example.com/api/teams-transcripts/graph-notifications\n'
                 'TEAMS_TRANSCRIPT_LOOKBACK_HOURS=48\n'
+                'TEAMS_TRANSCRIPT_PROCESSING_STALE_SECONDS=1800\n'
                 'TEAMS_TRANSCRIPT_SUMMARY_ENABLED=true\n'
                 'TEAMS_TRANSCRIPT_SUMMARY_ENABLE_THINKING=false\n'
                 'TEAMS_TRANSCRIPT_SUMMARY_LLM_MODEL=auto\n'
@@ -177,6 +178,7 @@ class TeamsConfigAPITests(TestCase):
             'https://transcripts.example.com/api/teams-transcripts/graph-notifications',
         )
         self.assertEqual(values['TEAMS_TRANSCRIPT_LOOKBACK_HOURS'], 48)
+        self.assertEqual(values['TEAMS_TRANSCRIPT_PROCESSING_STALE_SECONDS'], 1800)
         self.assertIs(values['TEAMS_TRANSCRIPT_SUMMARY_ENABLED'], True)
         self.assertIs(values['TEAMS_TRANSCRIPT_SUMMARY_ENABLE_THINKING'], False)
         self.assertEqual(values['TEAMS_TRANSCRIPT_SUMMARY_LLM_MODEL'], 'auto')
