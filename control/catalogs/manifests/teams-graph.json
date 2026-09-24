@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "service": "teams-graph",
+  "parameters": [
+    {
+      "key": "TEAMS_GRAPH_TENANT_ID",
+      "category": "teams",
+      "label": "Azure tenant ID",
+      "description": "Tenant ID приложения Microsoft Graph для Teams.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 10
+    },
+    {
+      "key": "TEAMS_GRAPH_CLIENT_ID",
+      "category": "teams",
+      "label": "Azure client ID",
+      "description": "Client ID приложения Microsoft Graph для Teams.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 20
+    },
+    {
+      "key": "TEAMS_GRAPH_DEFAULT_SCOPE",
+      "category": "teams",
+      "label": "Default Graph scope",
+      "description": "OAuth scope Microsoft Graph для client credentials flow.",
+      "data_type": "url",
+      "default_value": "https://graph.microsoft.com/.default",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 30
+    },
+    {
+      "key": "TEAMS_GRAPH_TIMEOUT_SECONDS",
+      "category": "teams",
+      "label": "Graph request timeout",
+      "description": "Таймаут запроса Microsoft Graph в секундах.",
+      "data_type": "float",
+      "default_value": 30,
+      "validation_rules": {
+        "min": 1,
+        "max": 3600
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 40
+    },
+    {
+      "key": "TEAMS_GRAPH_MAX_RETRIES",
+      "category": "teams",
+      "label": "Graph maximum retries",
+      "description": "Максимальное число повторов запроса Microsoft Graph.",
+      "data_type": "integer",
+      "default_value": 4,
+      "validation_rules": {
+        "min": 0,
+        "max": 20
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 50
+    },
+    {
+      "key": "TEAMS_GRAPH_ALLOWED_USER_IDS",
+      "category": "teams",
+      "label": "Allowed user IDs",
+      "description": "Разделённый запятыми список разрешённых Microsoft Graph user IDs.",
+      "data_type": "string",
+      "default_value": "",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 60
+    },
+    {
+      "key": "TEAMS_GRAPH_ALLOWED_USER_PRINCIPALS",
+      "category": "teams",
+      "label": "Allowed user principals",
+      "description": "Разделённый запятыми список разрешённых user principal names.",
+      "data_type": "string",
+      "default_value": "",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 70
+    },
+    {
+      "key": "TEAMS_GRAPH_ALLOWED_TEAM_IDS",
+      "category": "teams",
+      "label": "Allowed team IDs",
+      "description": "Разделённый запятыми список разрешённых Microsoft Graph team IDs.",
+      "data_type": "string",
+      "default_value": "",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 80
+    },
+    {
+      "key": "TEAMS_GRAPH_ALLOWED_CHANNEL_IDS",
+      "category": "teams",
+      "label": "Allowed channel IDs",
+      "description": "Разделённый запятыми список разрешённых Microsoft Graph channel IDs.",
+      "data_type": "string",
+      "default_value": "",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 90
+    },
+    {
+      "key": "TEAMS_GRAPH_ALLOWED_CHAT_IDS",
+      "category": "teams",
+      "label": "Allowed chat IDs",
+      "description": "Разделённый запятыми список разрешённых Microsoft Graph chat IDs.",
+      "data_type": "string",
+      "default_value": "",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 100
+    },
+    {
+      "key": "TEAMS_GRAPH_MAX_DAYS_BACK",
+      "category": "teams",
+      "label": "Maximum days back",
+      "description": "Глобальное ограничение глубины поиска сообщений в днях.",
+      "data_type": "integer",
+      "default_value": 30,
+      "validation_rules": {
+        "min": 1,
+        "max": 3650
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 110
+    },
+    {
+      "key": "TEAMS_GRAPH_MAX_RESULTS",
+      "category": "teams",
+      "label": "Maximum results",
+      "description": "Глобальное ограничение числа результатов Teams Graph.",
+      "data_type": "integer",
+      "default_value": 50,
+      "validation_rules": {
+        "min": 1,
+        "max": 1000
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 120
+    },
+    {
+      "key": "TEAMS_GRAPH_ATTACHMENTS_ENABLED",
+      "category": "teams",
+      "label": "Enable attachments",
+      "description": "Разрешить получение вложений Teams Graph.",
+      "data_type": "boolean",
+      "default_value": true,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 130
+    }
+  ]
+}

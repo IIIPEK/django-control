@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "categories": [
+    {
+      "code": "runtime",
+      "name": "Runtime",
+      "description": "Общие параметры запуска и обработки запросов.",
+      "sort_order": 10
+    },
+    {
+      "code": "logging",
+      "name": "Logging",
+      "description": "Формат и уровень журналирования.",
+      "sort_order": 20
+    },
+    {
+      "code": "llm",
+      "name": "LLM and classification",
+      "description": "VLM/LLM endpoints, модели и классификация.",
+      "sort_order": 30
+    },
+    {
+      "code": "ocr",
+      "name": "OCR",
+      "description": "Параметры OCR и извлечения текста.",
+      "sort_order": 40
+    },
+    {
+      "code": "sqlanywhere",
+      "name": "SQL Anywhere",
+      "description": "Подключение к учётной SQL Anywhere.",
+      "sort_order": 50
+    },
+    {
+      "code": "postgresql",
+      "name": "PostgreSQL",
+      "description": "Bootstrap-подключение FastAPI к PostgreSQL.",
+      "sort_order": 60
+    },
+    {
+      "code": "sql-api",
+      "name": "SQL query API",
+      "description": "Каталог, выполнение и ограничения SQL API.",
+      "sort_order": 70
+    },
+    {
+      "code": "voice",
+      "name": "Voice and diarization",
+      "description": "Whisper, diarization и обработка аудио.",
+      "sort_order": 80
+    },
+    {
+      "code": "mail",
+      "name": "Microsoft Graph mail",
+      "description": "Почтовый gateway, вложения и worker.",
+      "sort_order": 90
+    },
+    {
+      "code": "digidoc",
+      "name": "DigiDoc and SiVa",
+      "description": "Проверка и распаковка DigiDoc-контейнеров.",
+      "sort_order": 100
+    },
+    {
+      "code": "teams",
+      "name": "Microsoft Teams Graph",
+      "description": "Доступ к сообщениям и вложениям Microsoft Teams.",
+      "sort_order": 105
+    },
+    {
+      "code": "teams-transcripts",
+      "name": "Teams transcripts",
+      "description": "Архивация транскрипций Teams в SharePoint.",
+      "sort_order": 107
+    },
+    {
+      "code": "security",
+      "name": "Credentials and access",
+      "description": "Секреты, остающиеся во внешнем окружении.",
+      "sort_order": 110
+    }
+  ]
+}

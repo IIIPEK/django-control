@@ -142,6 +142,7 @@ class TeamsConfigAPITests(TestCase):
                 'TEAMS_TRANSCRIPT_SHAREPOINT_SITE_ID=sharepoint-site-id\n'
                 'TEAMS_TRANSCRIPT_NOTIFICATION_URL=https://transcripts.example.com/api/teams-transcripts/graph-notifications\n'
                 'TEAMS_TRANSCRIPT_LOOKBACK_HOURS=48\n'
+                'TEAMS_TRANSCRIPT_FINALIZATION_RETRY_SECONDS=300\n'
                 'TEAMS_TRANSCRIPT_PROCESSING_STALE_SECONDS=1800\n'
                 'TEAMS_TRANSCRIPT_SUMMARY_ENABLED=true\n'
                 'TEAMS_TRANSCRIPT_SUMMARY_ENABLE_THINKING=false\n'
@@ -152,7 +153,7 @@ class TeamsConfigAPITests(TestCase):
                 encoding='utf-8',
             )
             call_command(
-                'sync_fastapi_catalog',
+                'sync_managed_catalog',
                 env_file=env_path,
                 environment='production',
                 stdout=StringIO(),
@@ -178,6 +179,10 @@ class TeamsConfigAPITests(TestCase):
             'https://transcripts.example.com/api/teams-transcripts/graph-notifications',
         )
         self.assertEqual(values['TEAMS_TRANSCRIPT_LOOKBACK_HOURS'], 48)
+        self.assertEqual(
+            values['TEAMS_TRANSCRIPT_FINALIZATION_RETRY_SECONDS'],
+            300,
+        )
         self.assertEqual(values['TEAMS_TRANSCRIPT_PROCESSING_STALE_SECONDS'], 1800)
         self.assertIs(values['TEAMS_TRANSCRIPT_SUMMARY_ENABLED'], True)
         self.assertIs(values['TEAMS_TRANSCRIPT_SUMMARY_ENABLE_THINKING'], False)

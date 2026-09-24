@@ -1,13 +1,13 @@
 # django-control
 
-Django control plane for managed FastAPI configuration.
+Django control plane for managed service configuration.
 
-## FastAPI parameter catalog
+## Managed parameter catalog
 
 Preview an import without changing PostgreSQL:
 
 ```powershell
-python manage.py sync_fastapi_catalog `
+python manage.py sync_managed_catalog `
   --env-file .\no_commit\fastapi-ai-backend.env `
   --environment production `
   --dry-run
@@ -16,14 +16,21 @@ python manage.py sync_fastapi_catalog `
 Apply the catalog and non-secret values:
 
 ```powershell
-python manage.py sync_fastapi_catalog `
+python manage.py sync_managed_catalog `
   --env-file .\no_commit\fastapi-ai-backend.env `
   --environment production
 ```
 
-The command is idempotent. Secret and bootstrap parameters are registered in
+Definitions are loaded from versioned JSON manifests in
+`control/catalogs/manifests/`, with one parameter manifest per service and a
+shared category manifest. Adding or changing a definition requires editing its
+JSON manifest and running `sync_managed_catalog`; Django does not need a
+restart because the runtime API reads definitions from PostgreSQL. The command
+is idempotent. Secret and bootstrap parameters are registered in
 the catalog but their values are never copied from the env file. Unknown keys
 are reported by name and are not imported.
+
+`sync_fastapi_catalog` remains available as a backward-compatible alias.
 
 Use `--no-update` to create only missing values while preserving existing
 values and their active status (including values edited in Admin). Catalog
@@ -184,6 +191,7 @@ TEAMS_TRANSCRIPT_RECONCILIATION_INTERVAL_SECONDS
 TEAMS_TRANSCRIPT_LOOKBACK_HOURS
 TEAMS_TRANSCRIPT_SALES_CACHE_TTL_SECONDS
 TEAMS_TRANSCRIPT_SUBSCRIPTION_RENEW_BEFORE_MINUTES
+TEAMS_TRANSCRIPT_FINALIZATION_RETRY_SECONDS
 TEAMS_TRANSCRIPT_PROCESSING_STALE_SECONDS
 TEAMS_TRANSCRIPT_SUMMARY_ENABLED
 TEAMS_TRANSCRIPT_SUMMARY_ENABLE_THINKING
@@ -208,7 +216,7 @@ from this catalog.
 Import the non-secret values and defaults with:
 
 ```powershell
-python manage.py sync_fastapi_catalog `
+python manage.py sync_managed_catalog `
   --env-file "C:\iv\Python\django-control\no_commit\teams-transcript-worker-managed.env" `
   --environment production `
   --dry-run

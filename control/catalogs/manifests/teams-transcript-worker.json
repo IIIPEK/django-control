@@ -1,0 +1,471 @@
+{
+  "schema_version": 1,
+  "service": "teams-transcript-worker",
+  "parameters": [
+    {
+      "key": "TEAMS_TRANSCRIPT_TENANT_ID",
+      "category": "teams-transcripts",
+      "label": "Azure tenant ID",
+      "description": "Tenant ID приложения Teams Transcript Worker.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 10
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_CLIENT_ID",
+      "category": "teams-transcripts",
+      "label": "Azure client ID",
+      "description": "Client ID приложения Teams Transcript Worker; client secret остаётся только в окружении worker-а.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 20
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_GRAPH_SCOPE",
+      "category": "teams-transcripts",
+      "label": "Microsoft Graph scope",
+      "description": "OAuth scope Microsoft Graph для client credentials flow.",
+      "data_type": "url",
+      "default_value": "https://graph.microsoft.com/.default",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 30
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_FOCUS_USER_ID",
+      "category": "teams-transcripts",
+      "label": "Focus user ID",
+      "description": "Entra Object ID центрального участника, присутствие которого обязательно для обработки разговора.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": false,
+      "sort_order": 40
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_PRIORITY_CONTACT_USER_ID",
+      "category": "teams-transcripts",
+      "label": "Priority contact user ID",
+      "description": "Entra Object ID контакта с отдельным правилом классификации и маршрутизации.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": false,
+      "sort_order": 50
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_SALES_GROUP_ID",
+      "category": "teams-transcripts",
+      "label": "Sales group ID",
+      "description": "Entra Object ID группы Sales, состав которой worker обновляет динамически.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": false,
+      "sort_order": 60
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_SHAREPOINT_SITE_ID",
+      "category": "teams-transcripts",
+      "label": "SharePoint site ID",
+      "description": "Microsoft Graph site ID выделенного архива транскрипций.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": false,
+      "sort_order": 70
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_SHAREPOINT_LIBRARY_NAME",
+      "category": "teams-transcripts",
+      "label": "SharePoint library",
+      "description": "Имя библиотеки документов SharePoint.",
+      "data_type": "string",
+      "default_value": "Documents",
+      "validation_rules": {
+        "min_length": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 80
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_SOURCE_ROOT_PATH",
+      "category": "teams-transcripts",
+      "label": "Source transcripts root",
+      "description": "Корневая папка исходных транскрипций внутри библиотеки SharePoint.",
+      "data_type": "string",
+      "default_value": "Source transcripts",
+      "validation_rules": {
+        "min_length": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 90
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_SALES_PATH",
+      "category": "teams-transcripts",
+      "label": "Sales folder",
+      "description": "Папка транскрипций разговоров центрального участника с Sales.",
+      "data_type": "string",
+      "default_value": "Sales",
+      "validation_rules": {
+        "min_length": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 100
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_PRIORITY_CONTACT_PATH",
+      "category": "teams-transcripts",
+      "label": "Priority contact folder",
+      "description": "Папка транскрипций разговоров центрального участника с приоритетным контактом.",
+      "data_type": "string",
+      "default_value": "Priority contact",
+      "validation_rules": {
+        "min_length": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 110
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_GROUP_CALLS_PATH",
+      "category": "teams-transcripts",
+      "label": "Group calls folder",
+      "description": "Папка групповых звонков с центральным участником.",
+      "data_type": "string",
+      "default_value": "Group calls",
+      "validation_rules": {
+        "min_length": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 120
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_NOTIFICATION_URL",
+      "category": "teams-transcripts",
+      "label": "Notification URL",
+      "description": "Полный публичный HTTPS URL endpoint для Microsoft Graph change notifications.",
+      "data_type": "url",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 130
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_TIMEZONE",
+      "category": "teams-transcripts",
+      "label": "Local timezone",
+      "description": "IANA timezone для имён файлов и отображаемого времени.",
+      "data_type": "string",
+      "default_value": "Europe/Tallinn",
+      "validation_rules": {
+        "min_length": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 150
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_GRAPH_TIMEOUT_SECONDS",
+      "category": "teams-transcripts",
+      "label": "Graph request timeout",
+      "description": "Таймаут запроса Microsoft Graph в секундах.",
+      "data_type": "float",
+      "default_value": 30,
+      "validation_rules": {
+        "min": 1,
+        "max": 3600
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 160
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_GRAPH_MAX_RETRIES",
+      "category": "teams-transcripts",
+      "label": "Graph maximum retries",
+      "description": "Максимальное число повторов запроса Microsoft Graph.",
+      "data_type": "integer",
+      "default_value": 4,
+      "validation_rules": {
+        "min": 0,
+        "max": 20
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 170
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_RECONCILIATION_INTERVAL_SECONDS",
+      "category": "teams-transcripts",
+      "label": "Reconciliation interval",
+      "description": "Интервал резервной сверки транскрипций в секундах.",
+      "data_type": "integer",
+      "default_value": 300,
+      "validation_rules": {
+        "min": 30,
+        "max": 86400
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 180
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_LOOKBACK_HOURS",
+      "category": "teams-transcripts",
+      "label": "Reconciliation lookback",
+      "description": "Глубина резервной сверки транскрипций в часах.",
+      "data_type": "integer",
+      "default_value": 24,
+      "validation_rules": {
+        "min": 1,
+        "max": 720
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 190
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_SALES_CACHE_TTL_SECONDS",
+      "category": "teams-transcripts",
+      "label": "Sales cache TTL",
+      "description": "Интервал обновления состава Entra-группы Sales в секундах.",
+      "data_type": "integer",
+      "default_value": 900,
+      "validation_rules": {
+        "min": 60,
+        "max": 86400
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 200
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_SUBSCRIPTION_RENEW_BEFORE_MINUTES",
+      "category": "teams-transcripts",
+      "label": "Subscription renewal margin",
+      "description": "За сколько минут до истечения продлевать Graph subscriptions.",
+      "data_type": "integer",
+      "default_value": 60,
+      "validation_rules": {
+        "min": 5,
+        "max": 1440
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 210
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_FINALIZATION_RETRY_SECONDS",
+      "category": "teams-transcripts",
+      "label": "Finalization retry interval",
+      "description": "Интервал между повторными попытками финализации транскрипции в секундах.",
+      "data_type": "integer",
+      "default_value": 300,
+      "validation_rules": {
+        "min": 1,
+        "max": 86400
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 212
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_PROCESSING_STALE_SECONDS",
+      "category": "teams-transcripts",
+      "label": "Processing stale timeout",
+      "description": "Через сколько секунд незавершённая обработка считается зависшей и может быть восстановлена.",
+      "data_type": "integer",
+      "default_value": 1800,
+      "validation_rules": {
+        "min": 60,
+        "max": 86400
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 215
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_SUMMARY_ENABLED",
+      "category": "teams-transcripts",
+      "label": "Enable summaries",
+      "description": "Разрешить создание LLM-отчётов по транскрипциям.",
+      "data_type": "boolean",
+      "default_value": true,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 220
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_SUMMARY_ENABLE_THINKING",
+      "category": "teams-transcripts",
+      "label": "Enable summary thinking",
+      "description": "Разрешить режим thinking при создании LLM-отчётов.",
+      "data_type": "boolean",
+      "default_value": false,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 225
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_SUMMARY_LLM_URL",
+      "category": "teams-transcripts",
+      "label": "Summary LLM endpoint",
+      "description": "OpenAI-compatible endpoint модели для создания отчётов.",
+      "data_type": "url",
+      "default_value": "http://192.168.88.207:8012/v1/chat/completions",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 230
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_SUMMARY_LLM_MODEL",
+      "category": "teams-transcripts",
+      "label": "Summary LLM model",
+      "description": "Имя модели; auto означает определение worker-ом через /v1/models.",
+      "data_type": "string",
+      "default_value": "auto",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 240
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_SUMMARY_TIMEOUT_SECONDS",
+      "category": "teams-transcripts",
+      "label": "Summary timeout",
+      "description": "Таймаут запроса к LLM в секундах.",
+      "data_type": "integer",
+      "default_value": 120,
+      "validation_rules": {
+        "min": 1,
+        "max": 3600
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 250
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_SUMMARY_MAX_TOKENS",
+      "category": "teams-transcripts",
+      "label": "Summary maximum tokens",
+      "description": "Максимальное число выходных токенов LLM.",
+      "data_type": "integer",
+      "default_value": 2400,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 260
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_SUMMARY_MAX_INPUT_CHARS",
+      "category": "teams-transcripts",
+      "label": "Summary maximum input characters",
+      "description": "Максимальное число символов входной транскрипции для LLM.",
+      "data_type": "integer",
+      "default_value": 24000,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 270
+    },
+    {
+      "key": "TEAMS_TRANSCRIPT_REPORTS_ROOT_PATH",
+      "category": "teams-transcripts",
+      "label": "Reports root folder",
+      "description": "Корневая папка отчётов внутри библиотеки SharePoint.",
+      "data_type": "string",
+      "default_value": "Reports",
+      "validation_rules": {
+        "min_length": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 280
+    }
+  ]
+}

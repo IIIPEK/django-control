@@ -1,0 +1,393 @@
+{
+  "schema_version": 1,
+  "service": "mail-graph",
+  "parameters": [
+    {
+      "key": "MAIL_GRAPH_TENANT_ID",
+      "category": "mail",
+      "label": "Azure tenant ID",
+      "description": "Tenant ID приложения Microsoft Graph.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 10
+    },
+    {
+      "key": "MAIL_GRAPH_CLIENT_ID",
+      "category": "mail",
+      "label": "Azure client ID",
+      "description": "Client ID приложения Microsoft Graph.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 20
+    },
+    {
+      "key": "MAIL_GRAPH_DEFAULT_MAILBOX",
+      "category": "mail",
+      "label": "Default mailbox",
+      "description": "Почтовый ящик по умолчанию.",
+      "data_type": "string",
+      "default_value": "active_bot@freen.com",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 30
+    },
+    {
+      "key": "MAIL_GRAPH_ALLOWED_MAILBOXES",
+      "category": "mail",
+      "label": "Allowed mailboxes",
+      "description": "Разделённый запятыми список разрешённых mailbox.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 40
+    },
+    {
+      "key": "MAIL_GRAPH_TEMP_DIR",
+      "category": "mail",
+      "label": "Mail temporary directory",
+      "description": "Каталог временных почтовых вложений.",
+      "data_type": "string",
+      "default_value": "/var/tmp/fastapi-mail-graph",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 50
+    },
+    {
+      "key": "MAIL_GRAPH_MAX_ATTACHMENT_MB",
+      "category": "mail",
+      "label": "Maximum attachment size",
+      "description": "Максимальный размер одного вложения в MiB.",
+      "data_type": "integer",
+      "default_value": 150,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 60
+    },
+    {
+      "key": "MAIL_GRAPH_MAX_TOTAL_ATTACHMENT_MB",
+      "category": "mail",
+      "label": "Maximum total attachments",
+      "description": "Максимальный суммарный размер вложений в MiB.",
+      "data_type": "integer",
+      "default_value": 200,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 70
+    },
+    {
+      "key": "MAIL_GRAPH_ALLOWED_EXTENSIONS",
+      "category": "mail",
+      "label": "Allowed attachment extensions",
+      "description": "Разделённый запятыми список расширений вложений.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 80
+    },
+    {
+      "key": "MAIL_GRAPH_TIMEOUT_SECONDS",
+      "category": "mail",
+      "label": "Graph request timeout",
+      "description": "Таймаут запроса Microsoft Graph в секундах.",
+      "data_type": "float",
+      "default_value": 30,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 90
+    },
+    {
+      "key": "MAIL_GRAPH_MAX_RETRIES",
+      "category": "mail",
+      "label": "Graph maximum retries",
+      "description": "Максимальное число повторов Microsoft Graph.",
+      "data_type": "integer",
+      "default_value": 4,
+      "validation_rules": {
+        "min": 1,
+        "max": 20
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 100
+    },
+    {
+      "key": "MAIL_GRAPH_CLAIM_TIMEOUT_SECONDS",
+      "category": "mail",
+      "label": "Message claim timeout",
+      "description": "TTL claim сообщения в секундах.",
+      "data_type": "integer",
+      "default_value": 1800,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 150
+    },
+    {
+      "key": "MAIL_GRAPH_ALLOWED_DESTINATIONS",
+      "category": "mail",
+      "label": "Allowed workflow destinations",
+      "description": "Разделённый запятыми список logical destinations.",
+      "data_type": "string",
+      "default_value": "invoices,error",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 160
+    },
+    {
+      "key": "MAIL_GRAPH_ATTACHMENT_CACHE_TTL_SECONDS",
+      "category": "mail",
+      "label": "Attachment cache TTL",
+      "description": "TTL metadata вложения в секундах.",
+      "data_type": "integer",
+      "default_value": 3600,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 170
+    },
+    {
+      "key": "MAIL_GRAPH_TEXT_CACHE_TTL_SECONDS",
+      "category": "mail",
+      "label": "Text cache TTL",
+      "description": "TTL извлечённого текста в секундах.",
+      "data_type": "integer",
+      "default_value": 3600,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 180
+    },
+    {
+      "key": "MAIL_GRAPH_OCR_LANGUAGES",
+      "category": "mail",
+      "label": "OCR languages",
+      "description": "Разделённый запятыми список языков OCR.",
+      "data_type": "string",
+      "default_value": "et,en,ru,fi,sv",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 190
+    },
+    {
+      "key": "MAIL_API_AGENT_KEYS",
+      "category": "security",
+      "label": "Mail agent API keys",
+      "description": "Ключи mail agent API; хранятся только в окружении.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "env",
+      "is_secret": true,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 80
+    },
+    {
+      "key": "MAIL_API_ADMIN_KEYS",
+      "category": "security",
+      "label": "Mail admin API keys",
+      "description": "Ключи mail admin API; хранятся только в окружении.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "env",
+      "is_secret": true,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 90
+    },
+    {
+      "key": "MAIL_API_AGENT_POLICIES_JSON",
+      "category": "security",
+      "label": "Mail agent policies",
+      "description": "Политики содержат API-ключи и остаются только в окружении.",
+      "data_type": "json",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "env",
+      "is_secret": true,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 100
+    },
+    {
+      "key": "MAIL_GRAPH_CLIENT_SECRET",
+      "category": "security",
+      "label": "Microsoft Graph client secret",
+      "description": "Client secret Microsoft Graph; хранится только в окружении.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "env",
+      "is_secret": true,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 110
+    },
+    {
+      "key": "MAIL_DIGIDOC_SIVA_URL",
+      "category": "digidoc",
+      "label": "SiVa endpoint",
+      "description": "Базовый URL сервиса SiVa.",
+      "data_type": "url",
+      "default_value": "http://127.0.0.1:8085",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 10
+    },
+    {
+      "key": "MAIL_DIGIDOC_TIMEOUT_SECONDS",
+      "category": "digidoc",
+      "label": "SiVa timeout",
+      "description": "Таймаут SiVa в секундах.",
+      "data_type": "float",
+      "default_value": 60,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 20
+    },
+    {
+      "key": "MAIL_DIGIDOC_VALIDATION_POLICY",
+      "category": "digidoc",
+      "label": "SiVa validation policy",
+      "description": "Политика валидации DigiDoc.",
+      "data_type": "string",
+      "default_value": "POLv4",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 30
+    },
+    {
+      "key": "MAIL_DIGIDOC_MAX_CONTAINER_MB",
+      "category": "digidoc",
+      "label": "Maximum DigiDoc container",
+      "description": "Максимальный размер контейнера в MiB.",
+      "data_type": "integer",
+      "default_value": 20,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 40
+    },
+    {
+      "key": "MAIL_GRAPH_MAX_CONTAINER_FILES",
+      "category": "digidoc",
+      "label": "Maximum container files",
+      "description": "Максимальное число файлов внутри контейнера.",
+      "data_type": "integer",
+      "default_value": 50,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 50
+    },
+    {
+      "key": "MAIL_GRAPH_MAX_CONTAINER_EXPANDED_MB",
+      "category": "digidoc",
+      "label": "Maximum expanded container",
+      "description": "Максимальный распакованный размер контейнера в MiB.",
+      "data_type": "integer",
+      "default_value": 100,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 60
+    },
+    {
+      "key": "MAIL_GRAPH_ALLOWED_CONTAINER_EXTENSIONS",
+      "category": "digidoc",
+      "label": "Allowed container extensions",
+      "description": "Разделённый запятыми список типов DigiDoc-контейнеров.",
+      "data_type": "string",
+      "default_value": "asice,bdoc,ddoc",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 70
+    }
+  ]
+}

@@ -1,15 +1,17 @@
+import json
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.core.management import call_command
 from django.test import SimpleTestCase, TestCase
 
-from control.catalogs.fastapi import (
+from control.catalogs.managed import (
     CATEGORIES,
     PARAMETERS,
     PARAMETERS_BY_KEY,
+    load_managed_catalog,
     parse_env_value,
 )
 from control.models import (
@@ -121,7 +123,7 @@ class ParameterValidationTests(SimpleTestCase):
         return ParameterDefinition(**values)
 
 
-class FastAPICatalogTests(SimpleTestCase):
+class ManagedCatalogTests(SimpleTestCase):
     def test_parameter_keys_are_unique(self):
         self.assertEqual(len(PARAMETERS), len(PARAMETERS_BY_KEY))
 
@@ -167,6 +169,34 @@ class FastAPICatalogTests(SimpleTestCase):
 
         self.assertIs(parse_env_value(spec, 'true'), True)
 
+    def test_manifest_loader_rejects_unknown_parameter_fields(self):
+        with TemporaryDirectory() as temporary_directory:
+            manifest_path = Path(temporary_directory) / 'invalid.json'
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        'schema_version': 1,
+                        'service': 'example',
+                        'parameters': [
+                            {
+                                'key': 'EXAMPLE',
+                                'category': 'example',
+                                'label': 'Example',
+                                'description': '',
+                                'unexpected': True,
+                            }
+                        ],
+                    }
+                ),
+                encoding='utf-8',
+            )
+
+            with self.assertRaisesMessage(
+                ImproperlyConfigured,
+                'unknown parameter fields: unexpected',
+            ):
+                load_managed_catalog(Path(temporary_directory))
+
     def test_teams_graph_catalog_definitions(self):
         teams_specs = {
             spec.key: spec for spec in PARAMETERS if spec.service == 'teams-graph'
@@ -192,7 +222,7 @@ class FastAPICatalogTests(SimpleTestCase):
             if spec.service == 'teams-transcript-worker'
         }
 
-        self.assertEqual(len(worker_specs), 29)
+        self.assertEqual(len(worker_specs), 30)
         self.assertNotIn('TEAMS_TRANSCRIPT_CLIENT_SECRET', worker_specs)
         self.assertNotIn('TEAMS_TRANSCRIPT_NOTIFICATION_CLIENT_STATE', worker_specs)
         self.assertNotIn('TEAMS_TRANSCRIPT_PUBLIC_BASE_URL', worker_specs)
@@ -210,6 +240,12 @@ class FastAPICatalogTests(SimpleTestCase):
         self.assertEqual(
             worker_specs['TEAMS_TRANSCRIPT_SALES_CACHE_TTL_SECONDS'].default_value,
             900,
+        )
+        self.assertEqual(
+            worker_specs[
+                'TEAMS_TRANSCRIPT_FINALIZATION_RETRY_SECONDS'
+            ].default_value,
+            300,
         )
         self.assertEqual(
             worker_specs['TEAMS_TRANSCRIPT_PROCESSING_STALE_SECONDS'].default_value,
@@ -233,7 +269,7 @@ class FastAPICatalogTests(SimpleTestCase):
         )
 
 
-class FastAPICatalogSyncTests(TestCase):
+class ManagedCatalogSyncTests(TestCase):
     def test_no_update_preserves_existing_value_and_creates_missing_value(self):
         with TemporaryDirectory() as temporary_directory:
             env_path = Path(temporary_directory) / 'worker.env'
@@ -242,7 +278,7 @@ class FastAPICatalogSyncTests(TestCase):
                 encoding='utf-8',
             )
             call_command(
-                'sync_fastapi_catalog',
+                'sync_managed_catalog',
                 env_file=env_path,
                 environment='production',
                 stdout=StringIO(),
@@ -262,7 +298,7 @@ class FastAPICatalogSyncTests(TestCase):
             )
             output = StringIO()
             call_command(
-                'sync_fastapi_catalog',
+                'sync_managed_catalog',
                 env_file=env_path,
                 environment='production',
                 no_update=True,

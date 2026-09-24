@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "service": "mail-worker",
+  "parameters": [
+    {
+      "key": "MAIL_GRAPH_OUTBOUND_POLL_SECONDS",
+      "category": "mail",
+      "label": "Outbound poll interval",
+      "description": "Интервал опроса outbound-очереди в секундах.",
+      "data_type": "float",
+      "default_value": 2,
+      "validation_rules": {
+        "min": 0.1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 110
+    },
+    {
+      "key": "MAIL_GRAPH_OUTBOUND_LOCK_SECONDS",
+      "category": "mail",
+      "label": "Outbound lock duration",
+      "description": "TTL блокировки outbound-задачи в секундах.",
+      "data_type": "integer",
+      "default_value": 120,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 120
+    },
+    {
+      "key": "MAIL_GRAPH_SENT_RECONCILE_TIMEOUT_SECONDS",
+      "category": "mail",
+      "label": "Sent reconciliation timeout",
+      "description": "Таймаут подтверждения отправленного письма.",
+      "data_type": "integer",
+      "default_value": 300,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 130
+    },
+    {
+      "key": "MAIL_GRAPH_TEMP_TTL_SECONDS",
+      "category": "mail",
+      "label": "Temporary files TTL",
+      "description": "TTL временных почтовых файлов в секундах.",
+      "data_type": "integer",
+      "default_value": 86400,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 140
+    },
+    {
+      "key": "MAIL_GRAPH_OUTBOUND_WORKER_ID",
+      "category": "mail",
+      "label": "Outbound worker ID",
+      "description": "Уникальный ID экземпляра worker; задаётся окружением конкретного хоста.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "env",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 200
+    }
+  ]
+}

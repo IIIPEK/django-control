@@ -2,7 +2,7 @@
 
 ## Назначение
 
-`django-control` — управляющий backend для FastAPI-сервисов. Он предоставляет
+`django-control` — управляющий backend для сервисов и worker-ов. Он предоставляет
 Django Admin для редактирования конфигурации и прав доступа, а также защищённый
 read-only API, через который FastAPI получает разрешённые параметры, хеши
 API-ключей, политики и опубликованный SQL-каталог.
@@ -105,7 +105,7 @@ GET /api/v1/sql-catalog/<environment>/
 Импорт каталога параметров из env-файла:
 
 ```powershell
-python manage.py sync_fastapi_catalog `
+python manage.py sync_managed_catalog `
   --env-file .\no_commit\fastapi-ai-backend.env `
   --environment production `
   --dry-run

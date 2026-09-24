@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "service": "sql-query",
+  "parameters": [
+    {
+      "key": "SQLANY_SERVERNAME",
+      "category": "sqlanywhere",
+      "label": "SQL Anywhere server name",
+      "description": "Имя сервера SQL Anywhere.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 10
+    },
+    {
+      "key": "SQLANY_DBN",
+      "category": "sqlanywhere",
+      "label": "SQL Anywhere database",
+      "description": "Имя базы данных SQL Anywhere.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 20
+    },
+    {
+      "key": "SQLANY_ASTART",
+      "category": "sqlanywhere",
+      "label": "SQL Anywhere autostart",
+      "description": "Разрешение автоматического запуска базы драйвером.",
+      "data_type": "string",
+      "default_value": "No",
+      "validation_rules": {
+        "choices": [
+          "Yes",
+          "No"
+        ]
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 30
+    },
+    {
+      "key": "SQLANY_HOST",
+      "category": "sqlanywhere",
+      "label": "SQL Anywhere host",
+      "description": "Адрес и порт SQL Anywhere.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 40
+    },
+    {
+      "key": "SQLANY_UID",
+      "category": "security",
+      "label": "SQL Anywhere user",
+      "description": "Имя пользователя SQL Anywhere; хранится только в окружении.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "env",
+      "is_secret": true,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 10
+    },
+    {
+      "key": "SQLANY_PWD",
+      "category": "security",
+      "label": "SQL Anywhere password",
+      "description": "Пароль SQL Anywhere; хранится только в окружении.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "env",
+      "is_secret": true,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 20
+    },
+    {
+      "key": "SQL_DIR",
+      "category": "sql-api",
+      "label": "SQL directory",
+      "description": "Каталог SQL-файлов.",
+      "data_type": "string",
+      "default_value": "/opt/fastapi-backend/sql",
+      "validation_rules": {
+        "min_length": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 10
+    },
+    {
+      "key": "SQL_REGISTRY_FILE",
+      "category": "sql-api",
+      "label": "SQL registry file",
+      "description": "Путь к registry.json каталога SQL-запросов.",
+      "data_type": "string",
+      "default_value": "/opt/fastapi-backend/sql/registry.json",
+      "validation_rules": {
+        "min_length": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 20
+    },
+    {
+      "key": "SQL_QUERY_TIMEOUT_SECONDS",
+      "category": "sql-api",
+      "label": "SQL query timeout",
+      "description": "Максимальное время выполнения SQL API в секундах.",
+      "data_type": "float",
+      "default_value": 120,
+      "validation_rules": {
+        "min": 1,
+        "max": 3600
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 30
+    },
+    {
+      "key": "SQL_QUERY_MAX_RESPONSE_BYTES",
+      "category": "sql-api",
+      "label": "Maximum SQL response",
+      "description": "Максимальный размер ответа SQL API в байтах.",
+      "data_type": "integer",
+      "default_value": 10485760,
+      "validation_rules": {
+        "min": 1024
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 40
+    },
+    {
+      "key": "SQL_UPLOAD_MAX_BYTES",
+      "category": "sql-api",
+      "label": "Maximum SQL upload",
+      "description": "Максимальный размер загружаемого SQL-файла в байтах.",
+      "data_type": "integer",
+      "default_value": 1048576,
+      "validation_rules": {
+        "min": 1024
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 50
+    },
+    {
+      "key": "SQL_QUERY_API_KEY",
+      "category": "security",
+      "label": "SQL query API key",
+      "description": "Ключ доступа SQL API; хранится только в окружении.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "env",
+      "is_secret": true,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 40
+    }
+  ]
+}

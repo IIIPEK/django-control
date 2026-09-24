@@ -1,0 +1,293 @@
+{
+  "schema_version": 1,
+  "service": "voice",
+  "parameters": [
+    {
+      "key": "WHISPER_MODEL_PATH",
+      "category": "voice",
+      "label": "Whisper model path",
+      "description": "Локальный путь к модели faster-whisper.",
+      "data_type": "string",
+      "default_value": "/opt/models/faster-whisper-medium",
+      "validation_rules": {
+        "min_length": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 10
+    },
+    {
+      "key": "WHISPER_MODEL_NAME",
+      "category": "voice",
+      "label": "Whisper model name",
+      "description": "Имя модели Whisper для журналов и метаданных.",
+      "data_type": "string",
+      "default_value": "medium",
+      "validation_rules": {
+        "min_length": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 20
+    },
+    {
+      "key": "WHISPER_DEVICE",
+      "category": "voice",
+      "label": "Whisper device",
+      "description": "Устройство выполнения Whisper.",
+      "data_type": "string",
+      "default_value": "cuda",
+      "validation_rules": {
+        "choices": [
+          "cpu",
+          "cuda"
+        ]
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 30
+    },
+    {
+      "key": "WHISPER_DEVICE_INDEX",
+      "category": "voice",
+      "label": "Whisper device index",
+      "description": "Индекс GPU/устройства Whisper.",
+      "data_type": "integer",
+      "default_value": 0,
+      "validation_rules": {
+        "min": 0
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 40
+    },
+    {
+      "key": "WHISPER_COMPUTE_TYPE",
+      "category": "voice",
+      "label": "Whisper compute type",
+      "description": "Тип вычислений faster-whisper.",
+      "data_type": "string",
+      "default_value": "int8_float16",
+      "validation_rules": {
+        "min_length": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 50
+    },
+    {
+      "key": "WHISPER_MAX_FILE_BYTES",
+      "category": "voice",
+      "label": "Maximum audio file",
+      "description": "Максимальный размер аудиофайла в байтах.",
+      "data_type": "integer",
+      "default_value": 262144000,
+      "validation_rules": {
+        "min": 1024
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 60
+    },
+    {
+      "key": "WHISPER_MAX_DURATION_SECONDS",
+      "category": "voice",
+      "label": "Maximum audio duration",
+      "description": "Максимальная длительность аудио в секундах.",
+      "data_type": "float",
+      "default_value": 3600,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 70
+    },
+    {
+      "key": "WHISPER_BEAM_SIZE",
+      "category": "voice",
+      "label": "Whisper beam size",
+      "description": "Размер beam search Whisper.",
+      "data_type": "integer",
+      "default_value": 5,
+      "validation_rules": {
+        "min": 1,
+        "max": 100
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 80
+    },
+    {
+      "key": "WHISPER_DIARIZATION_ENABLED",
+      "category": "voice",
+      "label": "Enable diarization",
+      "description": "Включение определения говорящих.",
+      "data_type": "boolean",
+      "default_value": false,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 90
+    },
+    {
+      "key": "DIARIZATION_BACKEND",
+      "category": "voice",
+      "label": "Diarization backend",
+      "description": "Локальный или удалённый backend diarization.",
+      "data_type": "string",
+      "default_value": "local",
+      "validation_rules": {
+        "choices": [
+          "local",
+          "remote"
+        ]
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 100
+    },
+    {
+      "key": "DIARIZATION_URL",
+      "category": "voice",
+      "label": "Diarization endpoint",
+      "description": "HTTP endpoint удалённого diarization.",
+      "data_type": "url",
+      "default_value": "http://127.0.0.1:8020/diarize",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 110
+    },
+    {
+      "key": "DIARIZATION_TIMEOUT",
+      "category": "voice",
+      "label": "Diarization timeout",
+      "description": "Таймаут diarization в секундах.",
+      "data_type": "float",
+      "default_value": 900,
+      "validation_rules": {
+        "min": 1,
+        "max": 7200
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 120
+    },
+    {
+      "key": "DIARIZATION_MODEL_PATH",
+      "category": "voice",
+      "label": "Diarization model path",
+      "description": "Локальный путь к модели pyannote.",
+      "data_type": "string",
+      "default_value": "/opt/models/pyannote-speaker-diarization-3.1",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 130
+    },
+    {
+      "key": "DIARIZATION_DEVICE",
+      "category": "voice",
+      "label": "Diarization device",
+      "description": "Устройство выполнения локального diarization.",
+      "data_type": "string",
+      "default_value": "cuda",
+      "validation_rules": {
+        "choices": [
+          "cpu",
+          "cuda"
+        ]
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 140
+    },
+    {
+      "key": "DIARIZATION_DEVICE_INDEX",
+      "category": "voice",
+      "label": "Diarization device index",
+      "description": "Индекс устройства diarization.",
+      "data_type": "integer",
+      "default_value": 0,
+      "validation_rules": {
+        "min": 0
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 150
+    },
+    {
+      "key": "VOICE_API_KEY",
+      "category": "security",
+      "label": "Voice API key",
+      "description": "Ключ доступа voice API; хранится только в окружении.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "env",
+      "is_secret": true,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 50
+    },
+    {
+      "key": "DIARIZATION_API_KEY",
+      "category": "security",
+      "label": "Diarization API key",
+      "description": "Ключ удалённого diarization; хранится только в окружении.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "env",
+      "is_secret": true,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 60
+    },
+    {
+      "key": "HUGGINGFACE_TOKEN",
+      "category": "security",
+      "label": "Hugging Face token",
+      "description": "Токен загрузки моделей; хранится только в окружении.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "env",
+      "is_secret": true,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 70
+    }
+  ]
+}

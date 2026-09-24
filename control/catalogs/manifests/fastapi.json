@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "service": "fastapi",
+  "parameters": [
+    {
+      "key": "APP_ENV",
+      "category": "runtime",
+      "label": "Application environment",
+      "description": "Имя текущего окружения FastAPI.",
+      "data_type": "string",
+      "default_value": "dev",
+      "validation_rules": {
+        "choices": [
+          "dev",
+          "development",
+          "staging",
+          "production"
+        ]
+      },
+      "source": "env",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 10
+    },
+    {
+      "key": "MIN_TEXT_CHARS",
+      "category": "runtime",
+      "label": "Minimum text length",
+      "description": "Минимальное число символов для принятия извлечённого текста.",
+      "data_type": "integer",
+      "default_value": 100,
+      "validation_rules": {
+        "min": 1
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 20
+    },
+    {
+      "key": "REQUEST_TIMEOUT",
+      "category": "runtime",
+      "label": "Request timeout",
+      "description": "Общий таймаут внешнего запроса в секундах.",
+      "data_type": "float",
+      "default_value": 600,
+      "validation_rules": {
+        "min": 1,
+        "max": 3600
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 30
+    },
+    {
+      "key": "LOG_LEVEL",
+      "category": "logging",
+      "label": "Log level",
+      "description": "Уровень журналирования приложения.",
+      "data_type": "string",
+      "default_value": "INFO",
+      "validation_rules": {
+        "choices": [
+          "DEBUG",
+          "INFO",
+          "WARNING",
+          "ERROR",
+          "CRITICAL"
+        ]
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 10
+    },
+    {
+      "key": "LOG_FORMAT",
+      "category": "logging",
+      "label": "Log format",
+      "description": "Формат журналов: текст или JSON.",
+      "data_type": "string",
+      "default_value": "text",
+      "validation_rules": {
+        "choices": [
+          "text",
+          "json"
+        ]
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 20
+    },
+    {
+      "key": "LLAMA_URL",
+      "category": "llm",
+      "label": "VLM chat endpoint",
+      "description": "OpenAI-compatible endpoint основной VLM.",
+      "data_type": "url",
+      "default_value": "http://127.0.0.1:8080/v1/chat/completions",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 10
+    },
+    {
+      "key": "VLM_MODEL",
+      "category": "llm",
+      "label": "VLM model",
+      "description": "Имя VLM; значения auto и auto-detect определяют модель через /v1/models.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 20
+    },
+    {
+      "key": "CLASSIFICATION_LLM_URL",
+      "category": "llm",
+      "label": "Classification LLM endpoint",
+      "description": "OpenAI-compatible endpoint модели классификации.",
+      "data_type": "url",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 30
+    },
+    {
+      "key": "CLASSIFICATION_LLM_MODEL",
+      "category": "llm",
+      "label": "Classification model",
+      "description": "Имя текстовой модели; значения auto и auto-detect определяют модель через /v1/models.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 40
+    },
+    {
+      "key": "CLASSIFICATION_LLM_TIMEOUT_SECONDS",
+      "category": "llm",
+      "label": "Classification timeout",
+      "description": "Таймаут запроса классификации в секундах.",
+      "data_type": "float",
+      "default_value": 120,
+      "validation_rules": {
+        "min": 1,
+        "max": 3600
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 50
+    },
+    {
+      "key": "OCR_PROMPT",
+      "category": "ocr",
+      "label": "OCR prompt",
+      "description": "Инструкция модели для дословного извлечения текста из изображения.",
+      "data_type": "string",
+      "default_value": "Extract all visible text from the image. Do not translate. Do not summarize. Do not explain. Preserve original language, line breaks, numbers, punctuation, tables and currency symbols. Return only the extracted text.",
+      "validation_rules": {
+        "min_length": 10
+      },
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": true,
+      "sort_order": 10
+    },
+    {
+      "key": "PG_HOST",
+      "category": "postgresql",
+      "label": "PostgreSQL host",
+      "description": "Bootstrap-адрес PostgreSQL; необходим до чтения управляемой конфигурации.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "env",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 10
+    },
+    {
+      "key": "PG_PORT",
+      "category": "postgresql",
+      "label": "PostgreSQL port",
+      "description": "Bootstrap-порт PostgreSQL.",
+      "data_type": "integer",
+      "default_value": 5432,
+      "validation_rules": {
+        "min": 1,
+        "max": 65535
+      },
+      "source": "env",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 20
+    },
+    {
+      "key": "PG_DATABASE",
+      "category": "postgresql",
+      "label": "PostgreSQL database",
+      "description": "Bootstrap-имя рабочей базы FastAPI.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "env",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 30
+    },
+    {
+      "key": "PG_SCHEMA",
+      "category": "postgresql",
+      "label": "PostgreSQL schema",
+      "description": "Рабочая схема FastAPI.",
+      "data_type": "string",
+      "default_value": "public",
+      "validation_rules": {
+        "regex": "^[A-Za-z_][A-Za-z0-9_]*$"
+      },
+      "source": "env",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 40
+    },
+    {
+      "key": "PG_USER",
+      "category": "postgresql",
+      "label": "PostgreSQL user",
+      "description": "Bootstrap-пользователь PostgreSQL.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "env",
+      "is_secret": false,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 50
+    },
+    {
+      "key": "PG_PASSWORD",
+      "category": "security",
+      "label": "PostgreSQL password",
+      "description": "Пароль PostgreSQL; хранится только в окружении.",
+      "data_type": "string",
+      "default_value": null,
+      "validation_rules": {},
+      "source": "env",
+      "is_secret": true,
+      "is_required": true,
+      "requires_restart": true,
+      "sort_order": 30
+    }
+  ]
+}
