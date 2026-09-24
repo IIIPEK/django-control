@@ -222,7 +222,7 @@ class ManagedCatalogTests(SimpleTestCase):
             if spec.service == 'teams-transcript-worker'
         }
 
-        self.assertEqual(len(worker_specs), 30)
+        self.assertEqual(len(worker_specs), 31)
         self.assertNotIn('TEAMS_TRANSCRIPT_CLIENT_SECRET', worker_specs)
         self.assertNotIn('TEAMS_TRANSCRIPT_NOTIFICATION_CLIENT_STATE', worker_specs)
         self.assertNotIn('TEAMS_TRANSCRIPT_PUBLIC_BASE_URL', worker_specs)
@@ -230,6 +230,12 @@ class ManagedCatalogTests(SimpleTestCase):
         self.assertEqual(
             worker_specs['TEAMS_TRANSCRIPT_GRAPH_SCOPE'].default_value,
             'https://graph.microsoft.com/.default',
+        )
+        self.assertEqual(
+            worker_specs[
+                'TEAMS_TRANSCRIPT_PRIORITY_CONTACT_DISPLAY_NAME'
+            ].default_value,
+            'Nick Greb',
         )
         self.assertEqual(
             worker_specs[

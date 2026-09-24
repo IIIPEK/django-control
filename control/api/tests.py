@@ -138,6 +138,7 @@ class TeamsConfigAPITests(TestCase):
                 'TEAMS_TRANSCRIPT_CLIENT_ID=client-id\n'
                 'TEAMS_TRANSCRIPT_FOCUS_USER_ID=focus-user-id\n'
                 'TEAMS_TRANSCRIPT_PRIORITY_CONTACT_USER_ID=priority-contact-id\n'
+                'TEAMS_TRANSCRIPT_PRIORITY_CONTACT_DISPLAY_NAME=Nick Greb\n'
                 'TEAMS_TRANSCRIPT_SALES_GROUP_ID=sales-group-id\n'
                 'TEAMS_TRANSCRIPT_SHAREPOINT_SITE_ID=sharepoint-site-id\n'
                 'TEAMS_TRANSCRIPT_NOTIFICATION_URL=https://transcripts.example.com/api/teams-transcripts/graph-notifications\n'
@@ -173,6 +174,10 @@ class TeamsConfigAPITests(TestCase):
         self.assertEqual(
             values['TEAMS_TRANSCRIPT_PRIORITY_CONTACT_USER_ID'],
             'priority-contact-id',
+        )
+        self.assertEqual(
+            values['TEAMS_TRANSCRIPT_PRIORITY_CONTACT_DISPLAY_NAME'],
+            'Nick Greb',
         )
         self.assertEqual(
             values['TEAMS_TRANSCRIPT_NOTIFICATION_URL'],

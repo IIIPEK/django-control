@@ -73,6 +73,20 @@
       "sort_order": 50
     },
     {
+      "key": "TEAMS_TRANSCRIPT_PRIORITY_CONTACT_DISPLAY_NAME",
+      "category": "teams-transcripts",
+      "label": "Priority contact display name",
+      "description": "Отображаемое имя приоритетного контакта для подписей и отчётов.",
+      "data_type": "string",
+      "default_value": "Nick Greb",
+      "validation_rules": {},
+      "source": "database",
+      "is_secret": false,
+      "is_required": false,
+      "requires_restart": false,
+      "sort_order": 55
+    },
+    {
       "key": "TEAMS_TRANSCRIPT_SALES_GROUP_ID",
       "category": "teams-transcripts",
       "label": "Sales group ID",
