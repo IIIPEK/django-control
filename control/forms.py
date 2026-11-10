@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.forms.models import BaseInlineFormSet
 
 from control.models import (
     API_KEY_MIN_LENGTH,
@@ -122,7 +123,25 @@ class ApiCredentialAdminForm(forms.ModelForm):
         raw_key = cleaned_data.get('raw_key')
         generate_key_requested = cleaned_data.get('generate_key', False)
         environment = cleaned_data.get('environment')
+        credential_role = cleaned_data.get('role')
+        access_roles = cleaned_data.get('selected_access_roles')
         sql_profiles = cleaned_data.get('selected_sql_profiles')
+
+        if (
+            credential_role == ApiCredential.Role.CLIENT
+            and access_roles
+            and any(
+                access_role.scopes.filter(
+                    code=ApiCredential.Scope.MAIL_API,
+                    is_active=True,
+                ).exists()
+                for access_role in access_roles
+            )
+        ):
+            self.add_error(
+                'selected_access_roles',
+                'The mail.api scope requires an Agent or Administrator credential.',
+            )
 
         if environment and sql_profiles:
             mismatched = [
@@ -227,3 +246,18 @@ class MailAgentPolicyAdminForm(forms.ModelForm):
 
     def clean_recipient_domains(self) -> list[str]:
         return self._lines(self.cleaned_data.get('recipient_domains', ''))
+
+
+class MailAgentPolicyInlineFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        if any(self.errors) or self.instance.role == ApiCredential.Role.AGENT:
+            return
+        if any(
+            form.has_changed() and not form.cleaned_data.get('DELETE', False)
+            for form in self.forms
+            if hasattr(form, 'cleaned_data')
+        ):
+            raise ValidationError(
+                'Mail agent policy is only available for Agent credentials.'
+            )

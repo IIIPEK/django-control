@@ -265,6 +265,26 @@ class NormalizedCredentialAccessTests(TestCase):
         self.assertEqual(credential.access_role_codes(), ['sql-consumer'])
         self.assertEqual(credential.sql_profile_codes(), ['finance'])
 
+    def test_admin_form_rejects_mail_scope_for_client_role(self):
+        role = AccessRole.objects.get(code='mail-agent')
+        form = ApiCredentialAdminForm(
+            data={
+                'environment': 'production',
+                'name': 'Invalid mail client',
+                'description': '',
+                'role': ApiCredential.Role.CLIENT,
+                'selected_access_roles': [role.pk],
+                'selected_sql_profiles': [],
+                'is_active': True,
+                'expires_at': '',
+                'raw_key': 'm' * 32,
+                'generate_key': False,
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('selected_access_roles', form.errors)
+
     def test_admin_form_saves_teams_policy_fields(self):
         role = AccessRole.objects.get(code='teams-agent')
         form = ApiCredentialAdminForm(

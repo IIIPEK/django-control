@@ -2,7 +2,11 @@ from django.contrib import admin
 from django.template.response import TemplateResponse
 from django.urls import reverse
 
-from control.forms import ApiCredentialAdminForm, MailAgentPolicyAdminForm
+from control.forms import (
+    ApiCredentialAdminForm,
+    MailAgentPolicyAdminForm,
+    MailAgentPolicyInlineFormSet,
+)
 from control.models import (
     AccessRole,
     AccessRoleScope,
@@ -87,8 +91,12 @@ class ParameterValueAdmin(admin.ModelAdmin):
 
 @admin.register(ParameterChange)
 class ParameterChangeAdmin(admin.ModelAdmin):
+    fields = (
+        'parameter', 'environment', 'revision', 'old_value', 'new_value',
+        'changed_by', 'changed_at', 'comment',
+    )
     list_display = (
-        'definition',
+        'parameter',
         'environment',
         'revision',
         'changed_by',
@@ -97,7 +105,7 @@ class ParameterChangeAdmin(admin.ModelAdmin):
     list_filter = ('environment', 'definition__service', 'changed_at')
     search_fields = ('definition__key', 'definition__label', 'definition__service')
     readonly_fields = (
-        'definition',
+        'parameter',
         'environment',
         'revision',
         'old_value',
@@ -107,6 +115,10 @@ class ParameterChangeAdmin(admin.ModelAdmin):
         'comment',
     )
     ordering = ('-changed_at', '-revision')
+
+    @admin.display(description='Parameter')
+    def parameter(self, obj):
+        return str(obj.definition)
 
     def has_add_permission(self, request):
         return False
@@ -121,6 +133,7 @@ class ParameterChangeAdmin(admin.ModelAdmin):
 class MailAgentPolicyInline(admin.StackedInline):
     model = MailAgentPolicy
     form = MailAgentPolicyAdminForm
+    formset = MailAgentPolicyInlineFormSet
     extra = 1
     max_num = 1
     verbose_name = 'Mail agent policy'
